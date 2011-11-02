@@ -42,7 +42,7 @@ func Fft(x []float64) []complex128 {
 	w := make([]complex128, lx_2)
 	w[0] = complex(1, 0)
 
-	// split into event and odd parts
+	// split into even and odd parts
 	for n := 0; n < lx_2; n++ {
 		r[n] = complex(x[n * 2], 0)
 		r[n + lx_2] = complex(x[n * 2 + 1], 0)
