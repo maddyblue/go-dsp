@@ -1,11 +1,18 @@
-CC=$(GOBIN)/8g
-LD=$(GOBIN)/8l
+include $(GOROOT)/src/Make.inc
 
-all: main
-	cp main main.exe
+.PHONY: all install clean nuke fmt
 
-main: main.8 fft.8
-	$(LD) -L . -o $@ $<
+all:
+	gomake -C fft
 
-%.8: %.go
-	$(CC) $<
+install: all
+	gomake -C fft install
+
+clean:
+	gomake -C fft clean
+
+nuke:
+	gomake -C fft nuke
+
+fmt:
+	gomake -C fft fmt
