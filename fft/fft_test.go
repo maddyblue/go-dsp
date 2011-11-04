@@ -17,8 +17,13 @@
 package fft
 
 import (
-	"fmt"
+	"math"
 	"testing"
+)
+
+const (
+	sqrt2_2 = math.Sqrt2 / 2
+	closeFactor = 1e-14 // todo: test on a 32-bit machine
 )
 
 type fftTest struct {
@@ -27,6 +32,11 @@ type fftTest struct {
 }
 
 var fftTests = []fftTest{
+	// impulse responses
+	fftTest{
+		[]float64{1},
+		[]complex128{complex(1, 0)},
+	},
 	fftTest{
 		[]float64{1, 0},
 		[]complex128{complex(1, 0), complex(1, 0)},
@@ -39,16 +49,37 @@ var fftTests = []fftTest{
 		[]float64{1, 0, 0, 0, 0, 0, 0, 0},
 		[]complex128{complex(1, 0), complex(1, 0), complex(1, 0), complex(1, 0), complex(1, 0), complex(1, 0), complex(1, 0), complex(1, 0)},
 	},
+
+	// impulse shifted response
+	fftTest{
+		[]float64{0, 1},
+		[]complex128{complex(1, 0), complex(-1, 0)},
+	},
+	fftTest{
+		[]float64{0, 1, 0, 0},
+		[]complex128{complex(1, 0), complex(0, -1), complex(-1, 0), complex(0, 1)},
+	},
+	fftTest{
+		[]float64{0, 1, 0, 0, 0, 0, 0, 0},
+		[]complex128{complex(1, 0), complex(sqrt2_2, -sqrt2_2), complex(0, -1), complex(-sqrt2_2, -sqrt2_2), complex(-1, 0), complex(-sqrt2_2, sqrt2_2), complex(0, 1), complex(sqrt2_2, sqrt2_2)},
+	},
 }
 
-func PrettyClose(a, b []complex128) bool {
+func prettyClose(a, b []complex128) bool {
 	if len(a) != len(b) {
 		return false
 	}
 	for i, c := range a {
-		if c != b[i] {
+		a_r := real(c)
+		a_i := imag(c)
+		b_r := real(b[i])
+		b_i := imag(b[i])
+
+		if math.Fabs(1 - a_r / b_r) > closeFactor ||
+		   math.Fabs(1 - a_i / b_i) > closeFactor {
 			return false
 		}
+
 	}
 	return true
 }
@@ -56,9 +87,8 @@ func PrettyClose(a, b []complex128) bool {
 func TestFft(t *testing.T) {
 	for _, ft := range fftTests {
 		v := Fft(ft.in)
-		if !PrettyClose(v, ft.out) {
+		if !prettyClose(v, ft.out) {
 			t.Errorf("input: %s\noutput: %s\nexcepted: %s", ft.in, v, ft.out)
-			fmt.Println(v)
 		}
 	}
 }
