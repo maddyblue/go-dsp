@@ -23,6 +23,15 @@ import (
 func Fft(x []float64) []complex128 {
 	lx := len(x)
 
+	// todo: non-hack handling length <= 1 cases
+	if lx <= 1 {
+		r := make([]complex128, lx)
+		for n, v := range x {
+			r[n] = complex(v, 0)
+		}
+		return r
+	}
+
 	// expand a length of a power of 2
 	if lx&(lx-1) != 0 { // not a power of 2
 		nl := int(math.Pow(2, math.Ceil(math.Log2(float64(lx)))))
@@ -48,10 +57,8 @@ func Fft(x []float64) []complex128 {
 		r[n+lx_2] = complex(x[n*2+1], 0)
 	}
 
-	for i := 0; i < int(math.Log2(float64(lx))); i++ {
-		stage := 1 << uint(i+1)
-
-		if i == 0 { // 2-point transforms
+	for stage := 2; stage <= lx; stage <<= 1 {
+		if stage == 1 { // 2-point transforms
 			for n := 0; n < lx_2; n++ {
 				t[n*2] = r[n*2] + r[n*2+1]
 				t[n*2+1] = r[n*2] - r[n*2+1]
