@@ -2,10 +2,6 @@
 
 go-dsp is a digital signal processing package for the [Go programming language](http://golang.org).
 
-## TODO
-
-* test suite
-
 ## In-Progress Packages and Functions
 
 These methods are working, but have known bugs.
@@ -15,6 +11,7 @@ These methods are working, but have known bugs.
     * todo:
       * use goroutines
       * only returns correct results sometimes
+      * support lengths that are not a power of 2
 
 ## Planned Packages and Functions
 
