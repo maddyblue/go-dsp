@@ -2,16 +2,19 @@
 
 go-dsp is a digital signal processing package for the [Go programming language](http://golang.org).
 
-## In-Progress Packages and Functions
-
-These methods are working, but have known bugs.
+## Working Functions
 
 * **fft** - fast Fourier transform
   * **fft.Fft([]float64) []complex128** - forward FFT
     * todo:
       * use goroutines
-      * only returns correct results sometimes
       * support lengths that are not a power of 2
+
+## In-Progress Packages and Functions
+
+These methods are working, but have known bugs.
+
+* [none]
 
 ## Planned Packages and Functions
 

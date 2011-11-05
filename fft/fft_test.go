@@ -22,8 +22,8 @@ import (
 )
 
 const (
-	sqrt2_2 = math.Sqrt2 / 2
-	closeFactor = 1e-14 // todo: test on a 32-bit machine
+	sqrt2_2     = math.Sqrt2 / 2
+	closeFactor = 1e-9 // todo: test on a 32-bit machine
 )
 
 type fftTest struct {
@@ -47,10 +47,18 @@ var fftTests = []fftTest{
 	},
 	fftTest{
 		[]float64{1, 0, 0, 0, 0, 0, 0, 0},
-		[]complex128{complex(1, 0), complex(1, 0), complex(1, 0), complex(1, 0), complex(1, 0), complex(1, 0), complex(1, 0), complex(1, 0)},
+		[]complex128{
+			complex(1, 0),
+			complex(1, 0),
+			complex(1, 0),
+			complex(1, 0),
+			complex(1, 0),
+			complex(1, 0),
+			complex(1, 0),
+			complex(1, 0)},
 	},
 
-	// impulse shifted response
+	// shifted impulse response
 	fftTest{
 		[]float64{0, 1},
 		[]complex128{complex(1, 0), complex(-1, 0)},
@@ -61,7 +69,45 @@ var fftTests = []fftTest{
 	},
 	fftTest{
 		[]float64{0, 1, 0, 0, 0, 0, 0, 0},
-		[]complex128{complex(1, 0), complex(sqrt2_2, -sqrt2_2), complex(0, -1), complex(-sqrt2_2, -sqrt2_2), complex(-1, 0), complex(-sqrt2_2, sqrt2_2), complex(0, 1), complex(sqrt2_2, sqrt2_2)},
+		[]complex128{
+			complex(1, 0),
+			complex(sqrt2_2, -sqrt2_2),
+			complex(0, -1),
+			complex(-sqrt2_2, -sqrt2_2),
+			complex(-1, 0),
+			complex(-sqrt2_2, sqrt2_2),
+			complex(0, 1),
+			complex(sqrt2_2, sqrt2_2)},
+	},
+
+	// other
+	fftTest{
+		[]float64{1, 2, 3, 4},
+		[]complex128{
+			complex(10, 0),
+			complex(-2, 2),
+			complex(-2, 0),
+			complex(-2, -2)},
+	},
+	fftTest{
+		[]float64{1, 3, 5, 7},
+		[]complex128{
+			complex(16, 0),
+			complex(-4, 4),
+			complex(-4, 0),
+			complex(-4, -4)},
+	},
+	fftTest{
+		[]float64{1, 2, 3, 4, 5, 6, 7, 8},
+		[]complex128{
+			complex(36, 0),
+			complex(-4, 9.65685425),
+			complex(-4, 4),
+			complex(-4, 1.65685425),
+			complex(-4, 0),
+			complex(-4, -1.65685425),
+			complex(-4, -4),
+			complex(-4, -9.65685425)},
 	},
 }
 
@@ -70,25 +116,29 @@ func prettyClose(a, b []complex128) bool {
 		return false
 	}
 	for i, c := range a {
-		a_r := real(c)
-		a_i := imag(c)
-		b_r := real(b[i])
-		b_i := imag(b[i])
-
-		if math.Fabs(1 - a_r / b_r) > closeFactor ||
-		   math.Fabs(1 - a_i / b_i) > closeFactor {
+		if !ComplexEqual(c, b[i]) {
 			return false
 		}
-
 	}
 	return true
+}
+
+// returns true if a and b are very close, else false
+func ComplexEqual(a, b complex128) bool {
+	r_a := real(a)
+	r_b := real(b)
+	i_a := imag(a)
+	i_b := imag(b)
+
+	return ((r_a == r_b || math.Fabs(1-r_a/r_b) <= closeFactor) &&
+		(i_a == i_b || math.Fabs(1-i_a/i_b) <= closeFactor))
 }
 
 func TestFft(t *testing.T) {
 	for _, ft := range fftTests {
 		v := Fft(ft.in)
 		if !prettyClose(v, ft.out) {
-			t.Errorf("input: %s\noutput: %s\nexcepted: %s", ft.in, v, ft.out)
+			t.Error("input:", ft.in, "\noutput:", v, "\nexpected:", ft.out)
 		}
 	}
 }

@@ -51,10 +51,24 @@ func Fft(x []float64) []complex128 {
 	w := make([]complex128, lx_2) // complex multipliers
 	w[0] = complex(1, 0)
 
-	// split into even and odd parts
-	for n := 0; n < lx_2; n++ {
-		r[n] = complex(x[n*2], 0)
-		r[n+lx_2] = complex(x[n*2+1], 0)
+	for n, v := range x {
+		r[n] = complex(v, 0)
+	}
+
+	// split into even and odd parts for each stage
+	for block_sz := lx; block_sz > 1; block_sz >>= 1 {
+		i := 0
+		bs_2 := block_sz / 2
+		for block := 0; block < lx/block_sz; block++ {
+			for n := 0; n < bs_2; n++ {
+				bn := block_sz*block + n
+				t[bn] = r[i]
+				i++
+				t[bn+bs_2] = r[i]
+				i++
+			}
+		}
+		copy(r, t)
 	}
 
 	for stage := 2; stage <= lx; stage <<= 1 {
