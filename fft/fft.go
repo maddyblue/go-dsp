@@ -46,9 +46,9 @@ func Fft(x []float64) []complex128 {
 
 	lx_2 := lx / 2
 
-	r := make([]complex128, lx) // result
-	t := make([]complex128, lx) // temp
-	w := make([]complex128, lx_2)
+	r := make([]complex128, lx)   // result
+	t := make([]complex128, lx)   // temp
+	w := make([]complex128, lx_2) // complex multipliers
 	w[0] = complex(1, 0)
 
 	// split into even and odd parts
