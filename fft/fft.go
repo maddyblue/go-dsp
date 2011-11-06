@@ -28,7 +28,7 @@ func ensureFactors(input_len int) {
 	var cos, sin float64
 	for i := 4; i <= input_len; i <<= 1 {
 		if _, present := factors[i]; !present {
-			factors[i]= make([]complex128, i)
+			factors[i] = make([]complex128, i)
 			inv_factors[i] = make([]complex128, i)
 			for n := 0; n < i; n++ {
 				if n == 0 {
@@ -72,8 +72,8 @@ func Fft(x []float64) []complex128 {
 
 	lx_2 := lx / 2
 
-	r := make([]complex128, lx)   // result
-	t := make([]complex128, lx)   // temp
+	r := make([]complex128, lx) // result
+	t := make([]complex128, lx) // temp
 
 	for n, v := range x {
 		r[n] = complex(v, 0)
