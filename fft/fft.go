@@ -45,39 +45,72 @@ func ensureFactors(input_len int) {
 	}
 }
 
-func FFT(x []float64) []complex128 {
+func FFT_real(x []float64) []complex128 {
+	return FFT(ToComplex(x))
+}
+
+func IFFT_real(x []float64) []complex128 {
+	return IFFT(ToComplex(x))
+}
+
+func ToComplex(x []float64) []complex128 {
+	y := make([]complex128, len(x))
+	for n, v := range x {
+		y[n] = complex(v, 0)
+	}
+	return y
+}
+
+func FFT(x []complex128) []complex128 {
+	return computeFFT(x, factors)
+}
+
+func IFFT(x []complex128) []complex128 {
+	t := Conjugate(x)
+
+	r := computeFFT(t, factors)
+	N := complex(float64(len(r)), 0)
+	for n, v := range r {
+		r[n] = complex(imag(v), real(v)) / N
+	}
+	return r
+}
+
+func computeFFT(x []complex128, facts map[int][]complex128) []complex128 {
 	lx := len(x)
-	ensureFactors(lx)
 
 	// todo: non-hack handling length <= 1 cases
 	if lx <= 1 {
 		r := make([]complex128, lx)
 		for n, v := range x {
-			r[n] = complex(v, 0)
+			r[n] = v
 		}
 		return r
 	}
 
+	var r []complex128 // result
+
 	// expand a length of a power of 2
 	if lx&(lx-1) != 0 { // not a power of 2
 		nl := int(math.Pow(2, math.Ceil(math.Log2(float64(lx)))))
-		nx := make([]float64, nl)
-		copy(nx, x)
-		for i := 0; i < nl-lx; i++ {
-			nx[i+lx] = 0
+		r = make([]complex128, nl)
+		for n, v := range x {
+			r[n] = v
 		}
-		x = nx[:]
+		for i := 0; i < nl-lx; i++ {
+			r[i+lx] = 0
+		}
 		lx = nl
+	} else {
+		r = make([]complex128, lx)
+		copy(r, x)
 	}
 
-	lx_2 := lx / 2
+	ensureFactors(lx)
 
-	r := make([]complex128, lx) // result
 	t := make([]complex128, lx) // temp
 
-	for n, v := range x {
-		r[n] = complex(v, 0)
-	}
+	lx_2 := lx / 2
 
 	// split into even and odd parts for each stage
 	for block_sz := lx; block_sz > 1; block_sz >>= 1 {
@@ -118,5 +151,13 @@ func FFT(x []float64) []complex128 {
 		copy(r, t)
 	}
 
+	return r
+}
+
+func Conjugate(x []complex128) []complex128 {
+	r := make([]complex128, len(x))
+	for n, v := range x {
+		r[n] = complex(imag(v), real(v))
+	}
 	return r
 }
