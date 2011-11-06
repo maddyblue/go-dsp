@@ -45,7 +45,7 @@ func ensureFactors(input_len int) {
 	}
 }
 
-func Fft(x []float64) []complex128 {
+func FFT(x []float64) []complex128 {
 	lx := len(x)
 	ensureFactors(lx)
 

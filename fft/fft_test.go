@@ -134,9 +134,9 @@ func ComplexEqual(a, b complex128) bool {
 		(i_a == i_b || math.Fabs(1-i_a/i_b) <= closeFactor))
 }
 
-func TestFft(t *testing.T) {
+func TestFFT(t *testing.T) {
 	for _, ft := range fftTests {
-		v := Fft(ft.in)
+		v := FFT(ft.in)
 		if !prettyClose(v, ft.out) {
 			t.Error("input:", ft.in, "\noutput:", v, "\nexpected:", ft.out)
 		}
