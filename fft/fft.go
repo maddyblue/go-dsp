@@ -66,12 +66,10 @@ func FFT(x []complex128) []complex128 {
 }
 
 func IFFT(x []complex128) []complex128 {
-	t := Conjugate(x)
-
-	r := computeFFT(t, factors)
+	r := computeFFT(x, inv_factors)
 	N := complex(float64(len(r)), 0)
-	for n, v := range r {
-		r[n] = complex(imag(v), real(v)) / N
+	for n, _ := range r {
+		r[n] /= N
 	}
 	return r
 }
@@ -141,7 +139,7 @@ func computeFFT(x []complex128, facts map[int][]complex128) []complex128 {
 			for n := 0; n < blocks; n++ {
 				nb := n * stage
 				for j := 0; j < s_2; j++ {
-					w_n := r[j+nb+s_2] * factors[stage][j]
+					w_n := r[j+nb+s_2] * facts[stage][j]
 					t[j+nb] = r[j+nb] + w_n
 					t[j+nb+s_2] = r[j+nb] - w_n
 				}
@@ -151,13 +149,5 @@ func computeFFT(x []complex128, facts map[int][]complex128) []complex128 {
 		copy(r, t)
 	}
 
-	return r
-}
-
-func Conjugate(x []complex128) []complex128 {
-	r := make([]complex128, len(x))
-	for n, v := range x {
-		r[n] = complex(imag(v), real(v))
-	}
 	return r
 }
