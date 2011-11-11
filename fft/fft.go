@@ -75,25 +75,35 @@ func IFFT(x []complex128) []complex128 {
 }
 
 func computeFFT(x []complex128, facts map[int][]complex128) []complex128 {
+	var r []complex128
 	lx := len(x)
 
 	// todo: non-hack handling length <= 1 cases
 	if lx <= 1 {
-		r := make([]complex128, lx)
+		r = make([]complex128, lx)
 		for n, v := range x {
 			r[n] = v
 		}
 		return r
 	}
 
-	r := ZeroPad(x, NextPowerOf2(lx)) // result
-	lx = len(r)
+	if IsPowerOf2(lx) {
+		r = Radix2FFT(x, facts)
+	} else {
+		r = Radix2FFT(ZeroPad2(x), facts)
+	}
 
+	return r
+}
+
+func Radix2FFT(x []complex128, facts map[int][]complex128) []complex128 {
+	lx := len(x)
 	ensureFactors(lx)
 
-	t := make([]complex128, lx) // temp
-
 	lx_2 := lx / 2
+	r := make([]complex128, lx) // result
+	t := make([]complex128, lx) // temp
+	copy(r, x)
 
 	// split into even and odd parts for each stage
 	for block_sz := lx; block_sz > 1; block_sz >>= 1 {
@@ -137,9 +147,13 @@ func computeFFT(x []complex128, facts map[int][]complex128) []complex128 {
 	return r
 }
 
+func IsPowerOf2(x int) bool {
+	return x & (x - 1) == 0
+}
+
 // Returns the next power of 2 >= x.
 func NextPowerOf2(x int) int {
-	if x & (x - 1) != 0 { // not a power of 2
+	if !IsPowerOf2(x) {
 		x = int(math.Pow(2, math.Ceil(math.Log2(float64(x)))))
 	}
 
@@ -159,4 +173,9 @@ func ZeroPad(x []complex128, length int) []complex128 {
 	}
 
 	return x
+}
+
+// Zero pads to the next power of 2 >= len(x).
+func ZeroPad2(x []complex128) []complex128 {
+	return ZeroPad(x, NextPowerOf2(len(x)))
 }
