@@ -86,23 +86,8 @@ func computeFFT(x []complex128, facts map[int][]complex128) []complex128 {
 		return r
 	}
 
-	var r []complex128 // result
-
-	// expand a length of a power of 2
-	if lx&(lx-1) != 0 { // not a power of 2
-		nl := int(math.Pow(2, math.Ceil(math.Log2(float64(lx)))))
-		r = make([]complex128, nl)
-		for n, v := range x {
-			r[n] = v
-		}
-		for i := 0; i < nl-lx; i++ {
-			r[i+lx] = 0
-		}
-		lx = nl
-	} else {
-		r = make([]complex128, lx)
-		copy(r, x)
-	}
+	r := ZeroPad(x, NextPowerOf2(lx)) // result
+	lx = len(r)
 
 	ensureFactors(lx)
 
@@ -150,4 +135,28 @@ func computeFFT(x []complex128, facts map[int][]complex128) []complex128 {
 	}
 
 	return r
+}
+
+// Returns the next power of 2 >= x.
+func NextPowerOf2(x int) int {
+	if x & (x - 1) != 0 { // not a power of 2
+		x = int(math.Pow(2, math.Ceil(math.Log2(float64(x)))))
+	}
+
+	return x
+}
+
+func ZeroPad(x []complex128, length int) []complex128 {
+	lx := len(x)
+
+	if len(x) != length {
+		r := make([]complex128, length)
+		copy(r, x)
+		for i := 0; i < length - lx; i++ {
+			r[i + lx] = 0
+		}
+		x = r
+	}
+
+	return x
 }
