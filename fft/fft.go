@@ -17,19 +17,26 @@
 package fft
 
 import (
+	"fmt"
 	"math"
+	"os"
 )
 
+// radix-2 factors
 var factors = map[int][]complex128{}
-var inv_factors = map[int][]complex128{}
+
+// bluestein factors
+var n2_factors = map[int][]complex128{}
+var n2_inv_factors = map[int][]complex128{}
+var n2_conj_factors = map[int][]complex128{}
 
 // Ensures the complex multiplication factors exist for an input array of length input_len.
 func ensureFactors(input_len int) {
 	var cos, sin float64
+
 	for i := 4; i <= input_len; i <<= 1 {
 		if _, present := factors[i]; !present {
 			factors[i] = make([]complex128, i)
-			inv_factors[i] = make([]complex128, i)
 			for n := 0; n < i; n++ {
 				if n == 0 {
 					sin, cos = 0, 1
@@ -39,8 +46,23 @@ func ensureFactors(input_len int) {
 					sin, cos = math.Sincos(-2 * math.Pi / float64(i) * float64(n))
 				}
 				factors[i][n] = complex(cos, sin)
-				inv_factors[i][n] = complex(cos, -sin)
 			}
+		}
+	}
+
+	if _, present := n2_factors[input_len]; !present {
+		n2_factors[input_len] = make([]complex128, input_len)
+		n2_inv_factors[input_len] = make([]complex128, input_len)
+		n2_conj_factors[input_len] = make([]complex128, input_len)
+
+		for i := 0; i < input_len; i++ {
+			if i == 0 {
+				sin, cos = 0, 1
+			} else {
+				sin, cos = math.Sincos(math.Pi / float64(input_len) * math.Pow(float64(i), 2))
+			}
+			n2_factors[input_len][i] = complex(cos, sin)
+			n2_inv_factors[input_len][i] = complex(cos, -sin)
 		}
 	}
 }
@@ -62,19 +84,45 @@ func ToComplex(x []float64) []complex128 {
 }
 
 func FFT(x []complex128) []complex128 {
-	return computeFFT(x, factors)
+	return computeFFT(x)
 }
 
 func IFFT(x []complex128) []complex128 {
-	r := computeFFT(x, inv_factors)
-	N := complex(float64(len(r)), 0)
+	lx := len(x)
+	r := make([]complex128, lx)
+
+	// Reverse inputs, which is calculated with modulo N, hence x[0] as an outlier
+	r[0] = x[0]
+	for i := 1; i < lx; i++ {
+		r[i] = x[lx - i]
+	}
+
+	r = computeFFT(r)
+
+	N := complex(float64(lx), 0)
 	for n, _ := range r {
 		r[n] /= N
 	}
 	return r
 }
 
-func computeFFT(x []complex128, facts map[int][]complex128) []complex128 {
+func Convolve(x, y []complex128) ([]complex128, os.Error) {
+	if len(x) != len(y) {
+		return []complex128{}, os.NewError("fft: input arrays are not of equal length")
+	}
+
+	fft_x := FFT(x)
+	fft_y := FFT(y)
+
+	r := make([]complex128, len(x))
+	for i := 0; i < len(r); i++ {
+		r[i] = fft_x[i] * fft_y[i]
+	}
+
+	return IFFT(r), nil
+}
+
+func computeFFT(x []complex128) []complex128 {
 	var r []complex128
 	lx := len(x)
 
@@ -88,15 +136,15 @@ func computeFFT(x []complex128, facts map[int][]complex128) []complex128 {
 	}
 
 	if IsPowerOf2(lx) {
-		r = Radix2FFT(x, facts)
+		r = Radix2FFT(x)
 	} else {
-		r = Radix2FFT(ZeroPad2(x), facts)
+		r = BluesteinFFT(x)
 	}
 
 	return r
 }
 
-func Radix2FFT(x []complex128, facts map[int][]complex128) []complex128 {
+func Radix2FFT(x []complex128) []complex128 {
 	lx := len(x)
 	ensureFactors(lx)
 
@@ -134,7 +182,7 @@ func Radix2FFT(x []complex128, facts map[int][]complex128) []complex128 {
 			for n := 0; n < blocks; n++ {
 				nb := n * stage
 				for j := 0; j < s_2; j++ {
-					w_n := r[j+nb+s_2] * facts[stage][j]
+					w_n := r[j+nb+s_2] * factors[stage][j]
 					t[j+nb] = r[j+nb] + w_n
 					t[j+nb+s_2] = r[j+nb] - w_n
 				}
@@ -145,6 +193,43 @@ func Radix2FFT(x []complex128, facts map[int][]complex128) []complex128 {
 	}
 
 	return r
+}
+
+func BluesteinFFT(x []complex128) []complex128 {
+	lx := len(x)
+	a := ZeroPad(x, NextPowerOf2(lx * 2 - 1))
+	la := len(a)
+	ensureFactors(la)
+
+	for n, v := range a {
+		a[n] = v * n2_inv_factors[la][n]
+	}
+
+	b := make([]complex128, la)
+	for i := 0; i < la; i++ {
+		b[i] = complex(0, 0)
+	}
+
+	for i := 0; i < la; i++ {
+		if i == 0 {
+			b[i] = n2_factors[la][i]
+		} else if i < lx {
+			b[i] = n2_factors[la][i]
+			b[la - i] = n2_factors[la][i]
+		}
+	}
+
+	fmt.Println("x", lx, x)
+	fmt.Println("a", la, a)
+	fmt.Println("b", len(b), b)
+
+	r, _ := Convolve(a, b)
+
+	for i := 0; i < lx; i++ {
+		r[i] = n2_inv_factors[la][i] * r[i]
+	}
+
+	return r[:lx]
 }
 
 func IsPowerOf2(x int) bool {

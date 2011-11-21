@@ -45,18 +45,6 @@ var fftTests = []fftTest{
 		[]float64{1, 0, 0, 0},
 		[]complex128{complex(1, 0), complex(1, 0), complex(1, 0), complex(1, 0)},
 	},
-	fftTest{ // 5-element array, should be expanded to 8 elements
-		[]float64{1, 0, 0, 0, 0},
-		[]complex128{
-			complex(1, 0),
-			complex(1, 0),
-			complex(1, 0),
-			complex(1, 0),
-			complex(1, 0),
-			complex(1, 0),
-			complex(1, 0),
-			complex(1, 0)},
-	},
 	fftTest{
 		[]float64{1, 0, 0, 0, 0, 0, 0, 0},
 		[]complex128{
@@ -121,6 +109,24 @@ var fftTests = []fftTest{
 			complex(-4, -4),
 			complex(-4, -9.65685425)},
 	},
+
+	// non power of 2 lengths
+	fftTest{
+		[]float64{1, 0, 0, 0, 0},
+		[]complex128{
+			complex(1, 0),
+			complex(1, 0),
+			complex(1, 0),
+			complex(1, 0),
+			complex(1, 0)},
+	},
+	fftTest{
+		[]float64{1, 2, 3},
+		[]complex128{
+			complex(6, 0),
+			complex(-1.5, 0.8660254),
+			complex(-1.5, -0.8660254)},
+	},
 }
 
 func prettyClose(a, b []complex128) bool {
@@ -154,11 +160,9 @@ func TestFFT(t *testing.T) {
 			t.Error("FFT error\ninput:", ft.in, "\noutput:", v, "\nexpected:", ft.out)
 		}
 
-		if len(v) == len(ft.in) { // no automatic zero-padding for now, so only test on equals lengths
-			vi := IFFT(v)
-			if !prettyClose(vi, ToComplex(ft.in)) {
-				t.Error("IFFT error\ninput:", v, "\noutput:", vi, "\nexpected:", ToComplex(ft.in))
-			}
+		vi := IFFT(ft.out)
+		if !prettyClose(vi, ToComplex(ft.in)) {
+			t.Error("IFFT error\ninput:", ft.out, "\noutput:", vi, "\nexpected:", ToComplex(ft.in))
 		}
 	}
 }
