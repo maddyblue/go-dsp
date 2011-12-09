@@ -14,7 +14,6 @@ go-dsp is a digital signal processing package for the [Go programming language](
 
 * All FFT functions:
   * use goroutines
-  * support lengths that are not a power of 2
 
 ## Authors
 
