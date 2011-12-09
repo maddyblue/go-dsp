@@ -17,7 +17,6 @@
 package fft
 
 import (
-	"fmt"
 	"math"
 	"os"
 )
@@ -199,34 +198,26 @@ func BluesteinFFT(x []complex128) []complex128 {
 	lx := len(x)
 	a := ZeroPad(x, NextPowerOf2(lx * 2 - 1))
 	la := len(a)
-	ensureFactors(la)
+	ensureFactors(lx)
 
-	for n, v := range a {
-		a[n] = v * n2_inv_factors[la][n]
+	for n, v := range x {
+		a[n] = v * n2_inv_factors[lx][n]
 	}
 
 	b := make([]complex128, la)
-	for i := 0; i < la; i++ {
-		b[i] = complex(0, 0)
-	}
-
-	for i := 0; i < la; i++ {
+	for i := 0; i < lx; i++ {
 		if i == 0 {
-			b[i] = n2_factors[la][i]
+			b[i] = n2_factors[lx][i]
 		} else if i < lx {
-			b[i] = n2_factors[la][i]
-			b[la - i] = n2_factors[la][i]
+			b[i] = n2_factors[lx][i]
+			b[la - i] = n2_factors[lx][i]
 		}
 	}
-
-	fmt.Println("x", lx, x)
-	fmt.Println("a", la, a)
-	fmt.Println("b", len(b), b)
 
 	r, _ := Convolve(a, b)
 
 	for i := 0; i < lx; i++ {
-		r[i] = n2_inv_factors[la][i] * r[i]
+		r[i] = n2_inv_factors[lx][i] * r[i]
 	}
 
 	return r[:lx]

@@ -23,7 +23,7 @@ import (
 
 const (
 	sqrt2_2     = math.Sqrt2 / 2
-	closeFactor = 1e-9 // todo: test on a 32-bit machine
+	closeFactor = 1e-8 // todo: test on a 32-bit machine
 )
 
 type fftTest struct {
@@ -126,6 +126,13 @@ var fftTests = []fftTest{
 			complex(6, 0),
 			complex(-1.5, 0.8660254),
 			complex(-1.5, -0.8660254)},
+	},
+	fftTest{
+		[]float64{1, 1, 1},
+		[]complex128{
+			complex(3, 0),
+			complex(0, 0),
+			complex(0, 0)},
 	},
 }
 
