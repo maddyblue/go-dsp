@@ -14,7 +14,8 @@ go-dsp is a digital signal processing package for the [Go programming language](
 
 ```$ goinstall "github.com/mjibson/go-dsp/fft"```
 
-```package main
+```
+package main
 
 import "github.com/mjibson/go-dsp/fft"
 import "fmt"
