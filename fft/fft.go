@@ -39,7 +39,7 @@ func ensureFactors(input_len int) {
 	factors_lock.Lock()
 
 	for i := 4; i <= input_len; i <<= 1 {
-		if _, present := factors[i]; !present {
+		if factors[i] == nil {
 			factors[i] = make([]complex128, i)
 			for n := 0; n < i; n++ {
 				if n == 0 {
@@ -54,7 +54,7 @@ func ensureFactors(input_len int) {
 		}
 	}
 
-	if _, present := n2_factors[input_len]; !present {
+	if n2_factors[input_len] == nil {
 		n2_factors[input_len] = make([]complex128, input_len)
 		n2_inv_factors[input_len] = make([]complex128, input_len)
 
