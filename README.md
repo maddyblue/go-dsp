@@ -5,10 +5,7 @@ go-dsp is a digital signal processing package for the [Go programming language](
 ## Packages
 
 * **fft** - fast Fourier transform
-  * **fft.FFT([]complex128) []complex128** - forward FFT for complex inputs
-  * **fft.IFFT([]complex128) []complex128** - inverse FFT for complex inputs
-  * **fft.FFT_real([]float64) []complex128** - forward FFT for real inputs
-  * **fft.IFFT_real([]float64) []complex128** - inverse FFT for real inputs
+  * docs at: http://gopkgdoc.appspot.com/pkg/github.com/mjibson/go-dsp/fft
 
 ## Installation
 
@@ -21,14 +18,17 @@ import "github.com/mjibson/go-dsp/fft"
 import "fmt"
 
 func main() {
-        fmt.Println(fft.FFT_real([]float64 {1, 2, 3}))
+        fmt.Println(fft.FFTReal([]float64 {1, 2, 3}))
 }
 ```
 
 ## TODO
 
-* All FFT functions:
-  * use goroutines
+* fft:
+  * 2-dimensional FFT functions
+  * N-dimensional FFT functions
+  * support float32/complex64 inputs
+  * research possible performance gains with goroutines
 
 ## Authors
 
