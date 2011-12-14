@@ -20,7 +20,10 @@ package fft
 import (
 	"math"
 	"os"
+	"sync"
 )
+
+var factors_lock sync.RWMutex
 
 // radix-2 factors
 var factors = map[int][]complex128{}
@@ -32,6 +35,8 @@ var n2_inv_factors = map[int][]complex128{}
 // Ensures the complex multiplication factors exist for an input array of length input_len.
 func ensureFactors(input_len int) {
 	var cos, sin float64
+
+	factors_lock.Lock()
 
 	for i := 4; i <= input_len; i <<= 1 {
 		if _, present := factors[i]; !present {
@@ -63,6 +68,8 @@ func ensureFactors(input_len int) {
 			n2_inv_factors[input_len][i] = complex(cos, -sin)
 		}
 	}
+
+	factors_lock.Unlock()
 }
 
 // FFTReal returns the forward FFT of the real-valued slice.
