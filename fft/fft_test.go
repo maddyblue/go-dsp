@@ -161,14 +161,14 @@ func ComplexEqual(a, b complex128) bool {
 
 func TestFFT(t *testing.T) {
 	for _, ft := range fftTests {
-		v := FFT_real(ft.in)
+		v := FFTReal(ft.in)
 		if !prettyClose(v, ft.out) {
 			t.Error("FFT error\ninput:", ft.in, "\noutput:", v, "\nexpected:", ft.out)
 		}
 
 		vi := IFFT(ft.out)
-		if !prettyClose(vi, ToComplex(ft.in)) {
-			t.Error("IFFT error\ninput:", ft.out, "\noutput:", vi, "\nexpected:", ToComplex(ft.in))
+		if !prettyClose(vi, toComplex(ft.in)) {
+			t.Error("IFFT error\ninput:", ft.out, "\noutput:", vi, "\nexpected:", toComplex(ft.in))
 		}
 	}
 }

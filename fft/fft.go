@@ -14,6 +14,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+// Package fft provides forward and inverse fast Fourier transform functions.
 package fft
 
 import (
@@ -64,15 +65,18 @@ func ensureFactors(input_len int) {
 	}
 }
 
-func FFT_real(x []float64) []complex128 {
-	return FFT(ToComplex(x))
+// FFTReal returns the forward FFT of the real-valued slice.
+func FFTReal(x []float64) []complex128 {
+	return FFT(toComplex(x))
 }
 
-func IFFT_real(x []float64) []complex128 {
-	return IFFT(ToComplex(x))
+// IFFTReal returns the inverse FFT of the real-valued slice.
+func IFFTReal(x []float64) []complex128 {
+	return IFFT(toComplex(x))
 }
 
-func ToComplex(x []float64) []complex128 {
+// toComplex returns the complex equivalent of the real-valued slice.
+func toComplex(x []float64) []complex128 {
 	y := make([]complex128, len(x))
 	for n, v := range x {
 		y[n] = complex(v, 0)
@@ -80,6 +84,7 @@ func ToComplex(x []float64) []complex128 {
 	return y
 }
 
+// IFFT returns the inverse FFT of the complex-valued slice.
 func IFFT(x []complex128) []complex128 {
 	lx := len(x)
 	r := make([]complex128, lx)
@@ -99,6 +104,7 @@ func IFFT(x []complex128) []complex128 {
 	return r
 }
 
+// Convolve returns the convolution of x * y.
 func Convolve(x, y []complex128) ([]complex128, os.Error) {
 	if len(x) != len(y) {
 		return []complex128{}, os.NewError("fft: input arrays are not of equal length")
@@ -115,6 +121,7 @@ func Convolve(x, y []complex128) ([]complex128, os.Error) {
 	return IFFT(r), nil
 }
 
+// FFT returns the forward FFT of the complex-valued slice.
 func FFT(x []complex128) []complex128 {
 	lx := len(x)
 
@@ -125,14 +132,15 @@ func FFT(x []complex128) []complex128 {
 		return r
 	}
 
-	if IsPowerOf2(lx) {
-		return Radix2FFT(x)
+	if isPowerOf2(lx) {
+		return radix2FFT(x)
 	}
 
-	return BluesteinFFT(x)
+	return bluesteinFFT(x)
 }
 
-func Radix2FFT(x []complex128) []complex128 {
+// radix2FFT returns the FFT calculated using the radix-2 DIT Cooley-Tukey algorithm.
+func radix2FFT(x []complex128) []complex128 {
 	lx := len(x)
 	ensureFactors(lx)
 
@@ -183,9 +191,10 @@ func Radix2FFT(x []complex128) []complex128 {
 	return r
 }
 
-func BluesteinFFT(x []complex128) []complex128 {
+// bluesteinFFT returns the FFT calculated using the Bluestein algorithm.
+func bluesteinFFT(x []complex128) []complex128 {
 	lx := len(x)
-	a := ZeroPad(x, NextPowerOf2(lx*2-1))
+	a := zeroPad(x, nextPowerOf2(lx*2-1))
 	la := len(a)
 	ensureFactors(lx)
 
@@ -211,20 +220,23 @@ func BluesteinFFT(x []complex128) []complex128 {
 	return r[:lx]
 }
 
-func IsPowerOf2(x int) bool {
+// isPowerOf2 returns true if x is a power of 2, else false.
+func isPowerOf2(x int) bool {
 	return x&(x-1) == 0
 }
 
-// Returns the next power of 2 >= x.
-func NextPowerOf2(x int) int {
-	if IsPowerOf2(x) {
+// nextPowerOf2 returns the next power of 2 >= x.
+func nextPowerOf2(x int) int {
+	if isPowerOf2(x) {
 		return x
 	}
 
 	return int(math.Pow(2, math.Ceil(math.Log2(float64(x)))))
 }
 
-func ZeroPad(x []complex128, length int) []complex128 {
+// zeroPad returns x with zeros appended to the end to the specified length.
+// If len(x) == length, x is returned.
+func zeroPad(x []complex128, length int) []complex128 {
 	if len(x) == length {
 		return x
 	}
@@ -234,7 +246,7 @@ func ZeroPad(x []complex128, length int) []complex128 {
 	return r
 }
 
-// Zero pads to the next power of 2 >= len(x).
-func ZeroPad2(x []complex128) []complex128 {
-	return ZeroPad(x, NextPowerOf2(len(x)))
+// zeroPad2 returns zeroPad of x, with the length as next power of 2 >= len(x).
+func zeroPad2(x []complex128) []complex128 {
+	return zeroPad(x, nextPowerOf2(len(x)))
 }
