@@ -93,7 +93,7 @@ func IFFT(x []complex128) []complex128 {
 	// Reverse inputs, which is calculated with modulo N, hence x[0] as an outlier
 	r[0] = x[0]
 	for i := 1; i < lx; i++ {
-		r[i] = x[lx - i]
+		r[i] = x[lx-i]
 	}
 
 	r = computeFFT(r)
@@ -196,7 +196,7 @@ func Radix2FFT(x []complex128) []complex128 {
 
 func BluesteinFFT(x []complex128) []complex128 {
 	lx := len(x)
-	a := ZeroPad(x, NextPowerOf2(lx * 2 - 1))
+	a := ZeroPad(x, NextPowerOf2(lx*2-1))
 	la := len(a)
 	ensureFactors(lx)
 
@@ -210,7 +210,7 @@ func BluesteinFFT(x []complex128) []complex128 {
 			b[i] = n2_factors[lx][i]
 		} else if i < lx {
 			b[i] = n2_factors[lx][i]
-			b[la - i] = n2_factors[lx][i]
+			b[la-i] = n2_factors[lx][i]
 		}
 	}
 
@@ -224,7 +224,7 @@ func BluesteinFFT(x []complex128) []complex128 {
 }
 
 func IsPowerOf2(x int) bool {
-	return x & (x - 1) == 0
+	return x&(x-1) == 0
 }
 
 // Returns the next power of 2 >= x.
@@ -242,8 +242,8 @@ func ZeroPad(x []complex128, length int) []complex128 {
 	if len(x) != length {
 		r := make([]complex128, length)
 		copy(r, x)
-		for i := 0; i < length - lx; i++ {
-			r[i + lx] = 0
+		for i := 0; i < length-lx; i++ {
+			r[i+lx] = 0
 		}
 		x = r
 	}

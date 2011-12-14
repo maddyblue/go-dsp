@@ -155,8 +155,7 @@ func ComplexEqual(a, b complex128) bool {
 	i_a := imag(a)
 	i_b := imag(b)
 
-	return (
-		(math.Fabs(r_a-r_b) <= closeFactor || math.Fabs(1-r_a/r_b) <= closeFactor) &&
+	return ((math.Fabs(r_a-r_b) <= closeFactor || math.Fabs(1-r_a/r_b) <= closeFactor) &&
 		(math.Fabs(i_a-i_b) <= closeFactor || math.Fabs(1-i_a/i_b) <= closeFactor))
 }
 
