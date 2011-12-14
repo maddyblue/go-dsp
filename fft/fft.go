@@ -27,7 +27,6 @@ var factors = map[int][]complex128{}
 // bluestein factors
 var n2_factors = map[int][]complex128{}
 var n2_inv_factors = map[int][]complex128{}
-var n2_conj_factors = map[int][]complex128{}
 
 // Ensures the complex multiplication factors exist for an input array of length input_len.
 func ensureFactors(input_len int) {
@@ -52,13 +51,12 @@ func ensureFactors(input_len int) {
 	if _, present := n2_factors[input_len]; !present {
 		n2_factors[input_len] = make([]complex128, input_len)
 		n2_inv_factors[input_len] = make([]complex128, input_len)
-		n2_conj_factors[input_len] = make([]complex128, input_len)
 
 		for i := 0; i < input_len; i++ {
 			if i == 0 {
 				sin, cos = 0, 1
 			} else {
-				sin, cos = math.Sincos(math.Pi / float64(input_len) * math.Pow(float64(i), 2))
+				sin, cos = math.Sincos(math.Pi / float64(input_len) * float64(i*i))
 			}
 			n2_factors[input_len][i] = complex(cos, sin)
 			n2_inv_factors[input_len][i] = complex(cos, -sin)
@@ -82,10 +80,6 @@ func ToComplex(x []float64) []complex128 {
 	return y
 }
 
-func FFT(x []complex128) []complex128 {
-	return computeFFT(x)
-}
-
 func IFFT(x []complex128) []complex128 {
 	lx := len(x)
 	r := make([]complex128, lx)
@@ -96,7 +90,7 @@ func IFFT(x []complex128) []complex128 {
 		r[i] = x[lx-i]
 	}
 
-	r = computeFFT(r)
+	r = FFT(r)
 
 	N := complex(float64(lx), 0)
 	for n, _ := range r {
@@ -121,26 +115,21 @@ func Convolve(x, y []complex128) ([]complex128, os.Error) {
 	return IFFT(r), nil
 }
 
-func computeFFT(x []complex128) []complex128 {
-	var r []complex128
+func FFT(x []complex128) []complex128 {
 	lx := len(x)
 
 	// todo: non-hack handling length <= 1 cases
 	if lx <= 1 {
-		r = make([]complex128, lx)
-		for n, v := range x {
-			r[n] = v
-		}
+		r := make([]complex128, lx)
+		copy(r, x)
 		return r
 	}
 
 	if IsPowerOf2(lx) {
-		r = Radix2FFT(x)
-	} else {
-		r = BluesteinFFT(x)
+		return Radix2FFT(x)
 	}
 
-	return r
+	return BluesteinFFT(x)
 }
 
 func Radix2FFT(x []complex128) []complex128 {
@@ -206,10 +195,9 @@ func BluesteinFFT(x []complex128) []complex128 {
 
 	b := make([]complex128, la)
 	for i := 0; i < lx; i++ {
-		if i == 0 {
-			b[i] = n2_factors[lx][i]
-		} else if i < lx {
-			b[i] = n2_factors[lx][i]
+		b[i] = n2_factors[lx][i]
+
+		if i != 0 {
 			b[la-i] = n2_factors[lx][i]
 		}
 	}
@@ -217,7 +205,7 @@ func BluesteinFFT(x []complex128) []complex128 {
 	r, _ := Convolve(a, b)
 
 	for i := 0; i < lx; i++ {
-		r[i] = n2_inv_factors[lx][i] * r[i]
+		r[i] *= n2_inv_factors[lx][i]
 	}
 
 	return r[:lx]
@@ -229,26 +217,21 @@ func IsPowerOf2(x int) bool {
 
 // Returns the next power of 2 >= x.
 func NextPowerOf2(x int) int {
-	if !IsPowerOf2(x) {
-		x = int(math.Pow(2, math.Ceil(math.Log2(float64(x)))))
+	if IsPowerOf2(x) {
+		return x
 	}
 
-	return x
+	return int(math.Pow(2, math.Ceil(math.Log2(float64(x)))))
 }
 
 func ZeroPad(x []complex128, length int) []complex128 {
-	lx := len(x)
-
-	if len(x) != length {
-		r := make([]complex128, length)
-		copy(r, x)
-		for i := 0; i < length-lx; i++ {
-			r[i+lx] = 0
-		}
-		x = r
+	if len(x) == length {
+		return x
 	}
 
-	return x
+	r := make([]complex128, length)
+	copy(r, x)
+	return r
 }
 
 // Zero pads to the next power of 2 >= len(x).
