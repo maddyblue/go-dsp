@@ -25,7 +25,6 @@ func main() {
 ## TODO
 
 * fft:
-  * 2-dimensional FFT functions
   * N-dimensional FFT functions
   * support float32/complex64 inputs
   * research possible performance gains with goroutines

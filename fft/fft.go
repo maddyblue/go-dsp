@@ -257,3 +257,65 @@ func zeroPad(x []complex128, length int) []complex128 {
 func zeroPad2(x []complex128) []complex128 {
 	return zeroPad(x, nextPowerOf2(len(x)))
 }
+
+// toComplex2 returns the complex equivalent of the real-valued matrix.
+func toComplex2(x [][]float64) [][]complex128 {
+	y := make([][]complex128, len(x))
+	for n, v := range x {
+		y[n] = toComplex(v)
+	}
+	return y
+}
+
+// FFT2Real returns the 2-dimensional, forward FFT of the real-valued matrix.
+func FFT2Real(x [][]float64) ([][]complex128, os.Error) {
+	return FFT2(toComplex2(x))
+}
+
+// FFT2 returns the 2-dimensional, forward FFT of the complex-valued matrix.
+func FFT2(x [][]complex128) ([][]complex128, os.Error) {
+	return computeFFT2(x, FFT)
+}
+
+// IFFT2Real returns the 2-dimensional, inverse FFT of the real-valued matrix.
+func IFFT2Real(x [][]float64) ([][]complex128, os.Error) {
+	return IFFT2(toComplex2(x))
+}
+
+// IFFT2 returns the 2-dimensional, inverse FFT of the complex-valued matrix.
+func IFFT2(x [][]complex128) ([][]complex128, os.Error) {
+	return computeFFT2(x, IFFT)
+}
+
+func computeFFT2(x [][]complex128, fftFunc func([]complex128) ([]complex128)) ([][]complex128, os.Error) {
+	rows := len(x)
+	if rows == 0 {
+		return nil, os.NewError("fft: empty input array")
+	}
+
+	cols := len(x[0])
+	r := make([][]complex128, rows)
+	for i := 0; i < rows; i++ {
+		if len(x[i]) != cols {
+			return nil, os.NewError("fft: input matrix must have identical row lengths")
+		}
+		r[i] = make([]complex128, cols)
+	}
+
+	for i := 0; i < cols; i++ {
+		t := make([]complex128, rows)
+		for j := 0; j < rows; j++ {
+			t[j] = x[j][i]
+		}
+
+		for n, v := range fftFunc(t) {
+			r[n][i] = v
+		}
+	}
+
+	for n, v := range r {
+		r[n] = fftFunc(v)
+	}
+
+	return r, nil
+}
