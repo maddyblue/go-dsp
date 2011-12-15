@@ -33,7 +33,7 @@ func main() {
 
 **Matt Jibson**
 
-* http://mattjibson.com
+* http://mattjibson.com/
 * http://github.com/mjibson
 
 ## License
