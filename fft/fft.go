@@ -287,7 +287,7 @@ func IFFT2(x [][]complex128) ([][]complex128, os.Error) {
 	return computeFFT2(x, IFFT)
 }
 
-func computeFFT2(x [][]complex128, fftFunc func([]complex128) ([]complex128)) ([][]complex128, os.Error) {
+func computeFFT2(x [][]complex128, fftFunc func([]complex128) []complex128) ([][]complex128, os.Error) {
 	rows := len(x)
 	if rows == 0 {
 		return nil, os.NewError("fft: empty input array")
