@@ -23,41 +23,72 @@ import (
 	"sync"
 )
 
-var factors_lock sync.RWMutex
+var radix2Lock, bluesteinLock sync.RWMutex
 
 // radix-2 factors
-var factors = map[int][]complex128{
+var radix2Factors = map[int][]complex128{
 	4: {complex(1, 0), complex(0, -1), complex(-1, 0), complex(0, 1)},
 }
 
 // bluestein factors
-var n2_factors = map[int][]complex128{}
-var n2_inv_factors = map[int][]complex128{}
+var bluesteinFactors = map[int][]complex128{}
+var bluesteinInvFactors = map[int][]complex128{}
 
-// Ensures the complex multiplication factors exist for an input array of length input_len.
-func ensureFactors(input_len int) {
+func getRadix2Factors(input_len int) []complex128 {
 	var cos, sin float64
 
-	factors_lock.Lock()
+	radix2Lock.RLock()
 
-	for i, p := 8, 4; i <= input_len; i, p = i<<1, i {
-		if factors[i] == nil {
-			factors[i] = make([]complex128, i)
+	if hasRadix2Factors(input_len) {
+		defer radix2Lock.RUnlock()
+		return radix2Factors[input_len]
+	}
 
-			for n, j := 0, 0; n < i; n, j = n+2, j+1 {
-				factors[i][n] = factors[p][j]
-			}
+	radix2Lock.RUnlock()
+	radix2Lock.Lock()
+	defer radix2Lock.Unlock()
 
-			for n := 1; n < i; n += 2 {
-				sin, cos = math.Sincos(-2 * math.Pi / float64(i) * float64(n))
-				factors[i][n] = complex(cos, sin)
+	if !hasRadix2Factors(input_len) {
+		for i, p := 8, 4; i <= input_len; i, p = i<<1, i {
+			if radix2Factors[i] == nil {
+				radix2Factors[i] = make([]complex128, i)
+
+				for n, j := 0, 0; n < i; n, j = n+2, j+1 {
+					radix2Factors[i][n] = radix2Factors[p][j]
+				}
+
+				for n := 1; n < i; n += 2 {
+					sin, cos = math.Sincos(-2 * math.Pi / float64(i) * float64(n))
+					radix2Factors[i][n] = complex(cos, sin)
+				}
 			}
 		}
 	}
 
-	if n2_factors[input_len] == nil {
-		n2_factors[input_len] = make([]complex128, input_len)
-		n2_inv_factors[input_len] = make([]complex128, input_len)
+	return radix2Factors[input_len]
+}
+
+func hasRadix2Factors(idx int) bool {
+	return radix2Factors[idx] != nil
+}
+
+func getBluesteinFactors(input_len int) ([]complex128, []complex128) {
+	var cos, sin float64
+
+	bluesteinLock.RLock()
+
+	if hasBluesteinFactors(input_len) {
+		defer bluesteinLock.RUnlock()
+		return bluesteinFactors[input_len], bluesteinInvFactors[input_len]
+	}
+
+	bluesteinLock.RUnlock()
+	bluesteinLock.Lock()
+	defer bluesteinLock.Unlock()
+
+	if !hasBluesteinFactors(input_len) {
+		bluesteinFactors[input_len] = make([]complex128, input_len)
+		bluesteinInvFactors[input_len] = make([]complex128, input_len)
 
 		for i := 0; i < input_len; i++ {
 			if i == 0 {
@@ -65,12 +96,16 @@ func ensureFactors(input_len int) {
 			} else {
 				sin, cos = math.Sincos(math.Pi / float64(input_len) * float64(i*i))
 			}
-			n2_factors[input_len][i] = complex(cos, sin)
-			n2_inv_factors[input_len][i] = complex(cos, -sin)
+			bluesteinFactors[input_len][i] = complex(cos, sin)
+			bluesteinInvFactors[input_len][i] = complex(cos, -sin)
 		}
 	}
 
-	factors_lock.Unlock()
+	return bluesteinFactors[input_len], bluesteinInvFactors[input_len]
+}
+
+func hasBluesteinFactors(idx int) bool {
+	return bluesteinFactors[idx] != nil
 }
 
 // FFTReal returns the forward FFT of the real-valued slice.
@@ -150,7 +185,7 @@ func FFT(x []complex128) []complex128 {
 // radix2FFT returns the FFT calculated using the radix-2 DIT Cooley-Tukey algorithm.
 func radix2FFT(x []complex128) []complex128 {
 	lx := len(x)
-	ensureFactors(lx)
+	factors := getRadix2Factors(lx)
 
 	lx_2 := lx / 2
 	r := make([]complex128, lx) // result
@@ -186,7 +221,7 @@ func radix2FFT(x []complex128) []complex128 {
 			for n := 0; n < blocks; n++ {
 				nb := n * stage
 				for j := 0; j < s_2; j++ {
-					w_n := r[j+nb+s_2] * factors[stage][j]
+					w_n := r[j+nb+s_2] * factors[blocks*j]
 					t[j+nb] = r[j+nb] + w_n
 					t[j+nb+s_2] = r[j+nb] - w_n
 				}
@@ -204,25 +239,25 @@ func bluesteinFFT(x []complex128) []complex128 {
 	lx := len(x)
 	a := zeroPad(x, nextPowerOf2(lx*2-1))
 	la := len(a)
-	ensureFactors(lx)
+	factors, invFactors := getBluesteinFactors(lx)
 
 	for n, v := range x {
-		a[n] = v * n2_inv_factors[lx][n]
+		a[n] = v * invFactors[n]
 	}
 
 	b := make([]complex128, la)
 	for i := 0; i < lx; i++ {
-		b[i] = n2_factors[lx][i]
+		b[i] = factors[i]
 
 		if i != 0 {
-			b[la-i] = n2_factors[lx][i]
+			b[la-i] = factors[i]
 		}
 	}
 
 	r, _ := Convolve(a, b)
 
 	for i := 0; i < lx; i++ {
-		r[i] *= n2_inv_factors[lx][i]
+		r[i] *= invFactors[i]
 	}
 
 	return r[:lx]
