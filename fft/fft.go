@@ -26,7 +26,9 @@ import (
 var factors_lock sync.RWMutex
 
 // radix-2 factors
-var factors = map[int][]complex128{}
+var factors = map[int][]complex128{
+	4: {complex(1, 0), complex(0, -1), complex(-1, 0), complex(0, 1)},
+}
 
 // bluestein factors
 var n2_factors = map[int][]complex128{}
@@ -38,17 +40,16 @@ func ensureFactors(input_len int) {
 
 	factors_lock.Lock()
 
-	for i := 4; i <= input_len; i <<= 1 {
+	for i, p := 8, 4; i <= input_len; i, p = i<<1, i {
 		if factors[i] == nil {
 			factors[i] = make([]complex128, i)
-			for n := 0; n < i; n++ {
-				if n == 0 {
-					sin, cos = 0, 1
-				} else if n*4 == i {
-					sin, cos = -1, 0
-				} else {
-					sin, cos = math.Sincos(-2 * math.Pi / float64(i) * float64(n))
-				}
+
+			for n, j := 0, 0; n < i; n, j = n+2, j+1 {
+				factors[i][n] = factors[p][j]
+			}
+
+			for n := 1; n < i; n += 2 {
+				sin, cos = math.Sincos(-2 * math.Pi / float64(i) * float64(n))
 				factors[i][n] = complex(cos, sin)
 			}
 		}
