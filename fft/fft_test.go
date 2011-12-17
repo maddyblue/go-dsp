@@ -24,7 +24,6 @@ import (
 
 const (
 	sqrt2_2     = math.Sqrt2 / 2
-	closeFactor = 1e-8 // todo: test on a 32-bit machine
 )
 
 type fftTest struct {
@@ -158,52 +157,15 @@ var fft2Tests = []fft2Test{
 	},
 }
 
-func prettyClose(a, b []complex128) bool {
-	if len(a) != len(b) {
-		return false
-	}
-
-	for i, c := range a {
-		if !ComplexEqual(c, b[i]) {
-			return false
-		}
-	}
-	return true
-}
-
-func prettyClose2(a, b [][]complex128) bool {
-	if len(a) != len(b) {
-		return false
-	}
-
-	for i, c := range a {
-		if !prettyClose(c, b[i]) {
-			return false
-		}
-	}
-	return true
-}
-
-// returns true if a and b are very close, else false
-func ComplexEqual(a, b complex128) bool {
-	r_a := real(a)
-	r_b := real(b)
-	i_a := imag(a)
-	i_b := imag(b)
-
-	return ((math.Fabs(r_a-r_b) <= closeFactor || math.Fabs(1-r_a/r_b) <= closeFactor) &&
-		(math.Fabs(i_a-i_b) <= closeFactor || math.Fabs(1-i_a/i_b) <= closeFactor))
-}
-
 func TestFFT(t *testing.T) {
 	for _, ft := range fftTests {
 		v := FFTReal(ft.in)
-		if !prettyClose(v, ft.out) {
+		if !dsputils.PrettyClose(v, ft.out) {
 			t.Error("FFT error\ninput:", ft.in, "\noutput:", v, "\nexpected:", ft.out)
 		}
 
 		vi := IFFT(ft.out)
-		if !prettyClose(vi, dsputils.ToComplex(ft.in)) {
+		if !dsputils.PrettyClose(vi, dsputils.ToComplex(ft.in)) {
 			t.Error("IFFT error\ninput:", ft.out, "\noutput:", vi, "\nexpected:", dsputils.ToComplex(ft.in))
 		}
 	}
@@ -212,12 +174,12 @@ func TestFFT(t *testing.T) {
 func TestFFT2(t *testing.T) {
 	for _, ft := range fft2Tests {
 		v, _ := FFT2Real(ft.in)
-		if !prettyClose2(v, ft.out) {
+		if !dsputils.PrettyClose2(v, ft.out) {
 			t.Error("FFT2 error\ninput:", ft.in, "\noutput:", v, "\nexpected:", ft.out)
 		}
 
 		vi, _ := IFFT2(ft.out)
-		if !prettyClose2(vi, dsputils.ToComplex2(ft.in)) {
+		if !dsputils.PrettyClose2(vi, dsputils.ToComplex2(ft.in)) {
 			t.Error("IFFT2 error\ninput:", ft.out, "\noutput:", vi, "\nexpected:", dsputils.ToComplex2(ft.in))
 		}
 	}
