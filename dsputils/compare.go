@@ -25,7 +25,21 @@ const (
 )
 
 // PrettyClose returns true if the slices a and b are very close, else false.
-func PrettyClose(a, b []complex128) bool {
+func PrettyClose(a, b []float64) bool {
+	if len(a) != len(b) {
+		return false
+	}
+
+	for i, c := range a {
+		if !Float64Equal(c, b[i]) {
+			return false
+		}
+	}
+	return true
+}
+
+// PrettyCloseC returns true if the slices a and b are very close, else false.
+func PrettyCloseC(a, b []complex128) bool {
 	if len(a) != len(b) {
 		return false
 	}
@@ -45,7 +59,7 @@ func PrettyClose2(a, b [][]complex128) bool {
 	}
 
 	for i, c := range a {
-		if !PrettyClose(c, b[i]) {
+		if !PrettyCloseC(c, b[i]) {
 			return false
 		}
 	}

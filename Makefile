@@ -6,6 +6,7 @@ all: install
 DIRS=\
 	dsputils\
 	fft\
+	window\
 
 install clean nuke:
 	for dir in $(DIRS); do \
