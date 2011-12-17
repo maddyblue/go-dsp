@@ -1,18 +1,12 @@
 include $(GOROOT)/src/Make.inc
 
-.PHONY: all install clean nuke fmt
+all: install
 
-all:
-	gomake -C fft
+# Order matters!
+DIRS=\
+	fft\
 
-install: all
-	gomake -C fft install
-
-clean:
-	gomake -C fft clean
-
-nuke:
-	gomake -C fft nuke
-
-fmt:
-	gomake -C fft fmt
+install clean nuke:
+	for dir in $(DIRS); do \
+		$(MAKE) -C $$dir $@ || exit 1; \
+	done
