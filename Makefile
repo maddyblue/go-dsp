@@ -4,6 +4,7 @@ all: install
 
 # Order matters!
 DIRS=\
+	dsputils\
 	fft\
 
 install clean nuke:

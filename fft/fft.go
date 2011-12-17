@@ -18,6 +18,7 @@
 package fft
 
 import (
+	"dsputils"
 	"math"
 	"os"
 	"sync"
@@ -110,21 +111,12 @@ func hasBluesteinFactors(idx int) bool {
 
 // FFTReal returns the forward FFT of the real-valued slice.
 func FFTReal(x []float64) []complex128 {
-	return FFT(toComplex(x))
+	return FFT(dsputils.ToComplex(x))
 }
 
 // IFFTReal returns the inverse FFT of the real-valued slice.
 func IFFTReal(x []float64) []complex128 {
-	return IFFT(toComplex(x))
-}
-
-// toComplex returns the complex equivalent of the real-valued slice.
-func toComplex(x []float64) []complex128 {
-	y := make([]complex128, len(x))
-	for n, v := range x {
-		y[n] = complex(v, 0)
-	}
-	return y
+	return IFFT(dsputils.ToComplex(x))
 }
 
 // IFFT returns the inverse FFT of the complex-valued slice.
@@ -175,7 +167,7 @@ func FFT(x []complex128) []complex128 {
 		return r
 	}
 
-	if isPowerOf2(lx) {
+	if dsputils.IsPowerOf2(lx) {
 		return radix2FFT(x)
 	}
 
@@ -237,7 +229,7 @@ func radix2FFT(x []complex128) []complex128 {
 // bluesteinFFT returns the FFT calculated using the Bluestein algorithm.
 func bluesteinFFT(x []complex128) []complex128 {
 	lx := len(x)
-	a := zeroPad(x, nextPowerOf2(lx*2-1))
+	a := dsputils.ZeroPad(x, dsputils.NextPowerOf2(lx*2-1))
 	la := len(a)
 	factors, invFactors := getBluesteinFactors(lx)
 
@@ -263,49 +255,9 @@ func bluesteinFFT(x []complex128) []complex128 {
 	return r[:lx]
 }
 
-// isPowerOf2 returns true if x is a power of 2, else false.
-func isPowerOf2(x int) bool {
-	return x&(x-1) == 0
-}
-
-// nextPowerOf2 returns the next power of 2 >= x.
-func nextPowerOf2(x int) int {
-	if isPowerOf2(x) {
-		return x
-	}
-
-	return int(math.Pow(2, math.Ceil(math.Log2(float64(x)))))
-}
-
-// zeroPad returns x with zeros appended to the end to the specified length.
-// If len(x) == length, x is returned.
-func zeroPad(x []complex128, length int) []complex128 {
-	if len(x) == length {
-		return x
-	}
-
-	r := make([]complex128, length)
-	copy(r, x)
-	return r
-}
-
-// zeroPad2 returns zeroPad of x, with the length as next power of 2 >= len(x).
-func zeroPad2(x []complex128) []complex128 {
-	return zeroPad(x, nextPowerOf2(len(x)))
-}
-
-// toComplex2 returns the complex equivalent of the real-valued matrix.
-func toComplex2(x [][]float64) [][]complex128 {
-	y := make([][]complex128, len(x))
-	for n, v := range x {
-		y[n] = toComplex(v)
-	}
-	return y
-}
-
 // FFT2Real returns the 2-dimensional, forward FFT of the real-valued matrix.
 func FFT2Real(x [][]float64) ([][]complex128, os.Error) {
-	return FFT2(toComplex2(x))
+	return FFT2(dsputils.ToComplex2(x))
 }
 
 // FFT2 returns the 2-dimensional, forward FFT of the complex-valued matrix.
@@ -315,7 +267,7 @@ func FFT2(x [][]complex128) ([][]complex128, os.Error) {
 
 // IFFT2Real returns the 2-dimensional, inverse FFT of the real-valued matrix.
 func IFFT2Real(x [][]float64) ([][]complex128, os.Error) {
-	return IFFT2(toComplex2(x))
+	return IFFT2(dsputils.ToComplex2(x))
 }
 
 // IFFT2 returns the 2-dimensional, inverse FFT of the complex-valued matrix.

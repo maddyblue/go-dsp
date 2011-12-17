@@ -17,6 +17,7 @@
 package fft
 
 import (
+	"dsputils"
 	"math"
 	"testing"
 )
@@ -202,8 +203,8 @@ func TestFFT(t *testing.T) {
 		}
 
 		vi := IFFT(ft.out)
-		if !prettyClose(vi, toComplex(ft.in)) {
-			t.Error("IFFT error\ninput:", ft.out, "\noutput:", vi, "\nexpected:", toComplex(ft.in))
+		if !prettyClose(vi, dsputils.ToComplex(ft.in)) {
+			t.Error("IFFT error\ninput:", ft.out, "\noutput:", vi, "\nexpected:", dsputils.ToComplex(ft.in))
 		}
 	}
 }
@@ -216,8 +217,8 @@ func TestFFT2(t *testing.T) {
 		}
 
 		vi, _ := IFFT2(ft.out)
-		if !prettyClose2(vi, toComplex2(ft.in)) {
-			t.Error("IFFT2 error\ninput:", ft.out, "\noutput:", vi, "\nexpected:", toComplex2(ft.in))
+		if !prettyClose2(vi, dsputils.ToComplex2(ft.in)) {
+			t.Error("IFFT2 error\ninput:", ft.out, "\noutput:", vi, "\nexpected:", dsputils.ToComplex2(ft.in))
 		}
 	}
 }
