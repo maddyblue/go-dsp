@@ -160,12 +160,12 @@ var fft2Tests = []fft2Test{
 func TestFFT(t *testing.T) {
 	for _, ft := range fftTests {
 		v := FFTReal(ft.in)
-		if !dsputils.PrettyClose(v, ft.out) {
+		if !dsputils.PrettyCloseC(v, ft.out) {
 			t.Error("FFT error\ninput:", ft.in, "\noutput:", v, "\nexpected:", ft.out)
 		}
 
 		vi := IFFT(ft.out)
-		if !dsputils.PrettyClose(vi, dsputils.ToComplex(ft.in)) {
+		if !dsputils.PrettyCloseC(vi, dsputils.ToComplex(ft.in)) {
 			t.Error("IFFT error\ninput:", ft.out, "\noutput:", vi, "\nexpected:", dsputils.ToComplex(ft.in))
 		}
 	}
@@ -173,12 +173,12 @@ func TestFFT(t *testing.T) {
 
 func TestFFT2(t *testing.T) {
 	for _, ft := range fft2Tests {
-		v, _ := FFT2Real(ft.in)
+		v := FFT2Real(ft.in)
 		if !dsputils.PrettyClose2(v, ft.out) {
 			t.Error("FFT2 error\ninput:", ft.in, "\noutput:", v, "\nexpected:", ft.out)
 		}
 
-		vi, _ := IFFT2(ft.out)
+		vi := IFFT2(ft.out)
 		if !dsputils.PrettyClose2(vi, dsputils.ToComplex2(ft.in)) {
 			t.Error("IFFT2 error\ninput:", ft.out, "\noutput:", vi, "\nexpected:", dsputils.ToComplex2(ft.in))
 		}

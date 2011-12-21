@@ -20,24 +20,23 @@ package fft
 import (
 	"dsputils"
 	"math"
-	"os"
 	"sync"
 )
 
-var radix2Lock, bluesteinLock sync.RWMutex
+var (
+	radix2Lock sync.RWMutex
+	radix2Factors = map[int][]complex128{
+		4: {complex(1, 0), complex(0, -1), complex(-1, 0), complex(0, 1)},
+	}
+)
 
-// radix-2 factors
-var radix2Factors = map[int][]complex128{
-	4: {complex(1, 0), complex(0, -1), complex(-1, 0), complex(0, 1)},
-}
-
-// bluestein factors
-var bluesteinFactors = map[int][]complex128{}
-var bluesteinInvFactors = map[int][]complex128{}
+var (
+	bluesteinLock sync.RWMutex
+	bluesteinFactors = map[int][]complex128{}
+	bluesteinInvFactors = map[int][]complex128{}
+)
 
 func getRadix2Factors(input_len int) []complex128 {
-	var cos, sin float64
-
 	radix2Lock.RLock()
 
 	if hasRadix2Factors(input_len) {
@@ -59,7 +58,7 @@ func getRadix2Factors(input_len int) []complex128 {
 				}
 
 				for n := 1; n < i; n += 2 {
-					sin, cos = math.Sincos(-2 * math.Pi / float64(i) * float64(n))
+					sin, cos := math.Sincos(-2 * math.Pi / float64(i) * float64(n))
 					radix2Factors[i][n] = complex(cos, sin)
 				}
 			}
@@ -74,8 +73,6 @@ func hasRadix2Factors(idx int) bool {
 }
 
 func getBluesteinFactors(input_len int) ([]complex128, []complex128) {
-	var cos, sin float64
-
 	bluesteinLock.RLock()
 
 	if hasBluesteinFactors(input_len) {
@@ -91,6 +88,7 @@ func getBluesteinFactors(input_len int) ([]complex128, []complex128) {
 		bluesteinFactors[input_len] = make([]complex128, input_len)
 		bluesteinInvFactors[input_len] = make([]complex128, input_len)
 
+		var sin, cos float64
 		for i := 0; i < input_len; i++ {
 			if i == 0 {
 				sin, cos = 0, 1
@@ -140,9 +138,9 @@ func IFFT(x []complex128) []complex128 {
 }
 
 // Convolve returns the convolution of x * y.
-func Convolve(x, y []complex128) ([]complex128, os.Error) {
+func Convolve(x, y []complex128) []complex128 {
 	if len(x) != len(y) {
-		return []complex128{}, os.NewError("fft: input arrays are not of equal length")
+		panic("arrays not of equal size")
 	}
 
 	fft_x := FFT(x)
@@ -153,7 +151,7 @@ func Convolve(x, y []complex128) ([]complex128, os.Error) {
 		r[i] = fft_x[i] * fft_y[i]
 	}
 
-	return IFFT(r), nil
+	return IFFT(r)
 }
 
 // FFT returns the forward FFT of the complex-valued slice.
@@ -246,7 +244,7 @@ func bluesteinFFT(x []complex128) []complex128 {
 		}
 	}
 
-	r, _ := Convolve(a, b)
+	r := Convolve(a, b)
 
 	for i := 0; i < lx; i++ {
 		r[i] *= invFactors[i]
@@ -256,36 +254,36 @@ func bluesteinFFT(x []complex128) []complex128 {
 }
 
 // FFT2Real returns the 2-dimensional, forward FFT of the real-valued matrix.
-func FFT2Real(x [][]float64) ([][]complex128, os.Error) {
+func FFT2Real(x [][]float64) [][]complex128 {
 	return FFT2(dsputils.ToComplex2(x))
 }
 
 // FFT2 returns the 2-dimensional, forward FFT of the complex-valued matrix.
-func FFT2(x [][]complex128) ([][]complex128, os.Error) {
+func FFT2(x [][]complex128) [][]complex128 {
 	return computeFFT2(x, FFT)
 }
 
 // IFFT2Real returns the 2-dimensional, inverse FFT of the real-valued matrix.
-func IFFT2Real(x [][]float64) ([][]complex128, os.Error) {
+func IFFT2Real(x [][]float64) [][]complex128 {
 	return IFFT2(dsputils.ToComplex2(x))
 }
 
 // IFFT2 returns the 2-dimensional, inverse FFT of the complex-valued matrix.
-func IFFT2(x [][]complex128) ([][]complex128, os.Error) {
+func IFFT2(x [][]complex128) [][]complex128 {
 	return computeFFT2(x, IFFT)
 }
 
-func computeFFT2(x [][]complex128, fftFunc func([]complex128) []complex128) ([][]complex128, os.Error) {
+func computeFFT2(x [][]complex128, fftFunc func([]complex128) []complex128) [][]complex128 {
 	rows := len(x)
 	if rows == 0 {
-		return nil, os.NewError("fft: empty input array")
+		panic("empty input array")
 	}
 
 	cols := len(x[0])
 	r := make([][]complex128, rows)
 	for i := 0; i < rows; i++ {
 		if len(x[i]) != cols {
-			return nil, os.NewError("fft: input matrix must have identical row lengths")
+			panic("ragged input array")
 		}
 		r[i] = make([]complex128, cols)
 	}
@@ -305,5 +303,5 @@ func computeFFT2(x [][]complex128, fftFunc func([]complex128) []complex128) ([][
 		r[n] = fftFunc(v)
 	}
 
-	return r, nil
+	return r
 }
