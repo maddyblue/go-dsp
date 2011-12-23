@@ -274,34 +274,57 @@ func IFFT2(x [][]complex128) [][]complex128 {
 }
 
 func computeFFT2(x [][]complex128, fftFunc func([]complex128) []complex128) [][]complex128 {
-	rows := len(x)
-	if rows == 0 {
-		panic("empty input array")
-	}
+	return computeFFTN(dsputils.MakeMatrix2(x), fftFunc).To2D()
+}
 
-	cols := len(x[0])
-	r := make([][]complex128, rows)
-	for i := 0; i < rows; i++ {
-		if len(x[i]) != cols {
-			panic("ragged input array")
+func computeFFTN(m dsputils.Matrix, fftFunc func([]complex128) []complex128) dsputils.Matrix {
+	dims = m.Dimensions()
+	t := m.Copy()
+	r := dsputils.MakeEmptyMatrix(dims)
+	for n, v := dims {
+		d = m.Dimensions()
+		d[n] = -1
+
+		for {
+			r.SetDim(fftFunc(t.Dim(d)), d)
+
+			if !decrDim(d, dims) {
+				break
+			}
 		}
-		r[i] = make([]complex128, cols)
+
+		r, t = t, r
 	}
 
-	for i := 0; i < cols; i++ {
-		t := make([]complex128, rows)
-		for j := 0; j < rows; j++ {
-			t[j] = x[j][i]
+	return t
+}
+
+// Returns true if decremented, else false.
+func decrDim(x, d []int) bool {
+	for n, v := range x {
+		if v == -1 {
+			continue
+		} else if v == 0 {
+			i := n + 1
+			// find the next element to decrement
+			for ; i < len(x); i++ {
+				if x[i] == -1 {
+					continue
+				}
+
+
+			}
+
+			// everything is zero
+			if i == len(x) {
+				return false
+			}
+		} else {
+			x[n] -= 1
 		}
 
-		for n, v := range fftFunc(t) {
-			r[n][i] = v
-		}
+		return true
 	}
 
-	for n, v := range r {
-		r[n] = fftFunc(v)
-	}
-
-	return r
+	return false
 }

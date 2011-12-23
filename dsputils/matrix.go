@@ -69,6 +69,14 @@ func MakeMatrix2(x [][]complex128) Matrix {
 	return MakeMatrix(r, dims)
 }
 
+// Copy returns a new copy of m.
+func (m Matrix) Copy() Matrix {
+	r := Matrix{m.list, m.dims, m.offsets}
+	r.list = make([]complex128, len(m.list))
+	copy(r.list, m.list)
+	return r
+}
+
 // MakeEmptyMatrix creates an empty Matrix with given dimensions.
 func MakeEmptyMatrix(dims []int) Matrix {
 	x := 1
@@ -174,4 +182,20 @@ func (s Matrix) Value(dims []int) complex128 {
 // m.SetValue(10, []int {1, 2, 3, 4}) is equivalent to m[1][2][3][4] = 10.
 func (s Matrix) SetValue(x complex128, dims []int) {
 	s.list[s.offset(dims)] = x
+}
+
+// To2D returns the 2-D array equivalent of the Matrix.
+// Only works on Matrixes of 2 dimensions.
+func (m Matrix) To2D() [][]complex128 {
+	if len(m.dims) != 2 {
+		panic("can only convert 2-D Matrixes")
+	}
+
+	r := make([][]complex128, m.dims[0])
+	for i := 0; i < m.dims[0]; i++ {
+		r[i] = make([]complex128, m.dims[1])
+		copy(r[i], m.list[i * m.dims[1]:(i + 1) * m.dims[1]])
+	}
+
+	return r
 }
