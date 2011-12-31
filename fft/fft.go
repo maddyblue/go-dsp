@@ -24,15 +24,15 @@ import (
 )
 
 var (
-	radix2Lock sync.RWMutex
+	radix2Lock    sync.RWMutex
 	radix2Factors = map[int][]complex128{
 		4: {complex(1, 0), complex(0, -1), complex(-1, 0), complex(0, 1)},
 	}
 )
 
 var (
-	bluesteinLock sync.RWMutex
-	bluesteinFactors = map[int][]complex128{}
+	bluesteinLock       sync.RWMutex
+	bluesteinFactors    = map[int][]complex128{}
 	bluesteinInvFactors = map[int][]complex128{}
 )
 

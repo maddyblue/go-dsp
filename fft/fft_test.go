@@ -23,7 +23,7 @@ import (
 )
 
 const (
-	sqrt2_2     = math.Sqrt2 / 2
+	sqrt2_2 = math.Sqrt2 / 2
 )
 
 type fftTest struct {

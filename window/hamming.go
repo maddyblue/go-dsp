@@ -29,7 +29,7 @@ func Hamming(L int) []float64 {
 	N := L - 1
 	coef := math.Pi * 2 / float64(N)
 	for n := 0; n <= N; n++ {
-		r[n] = 0.54 - 0.46 * math.Cos(coef * float64(n))
+		r[n] = 0.54 - 0.46*math.Cos(coef*float64(n))
 	}
 
 	return r
