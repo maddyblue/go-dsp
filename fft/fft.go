@@ -274,7 +274,36 @@ func IFFT2(x [][]complex128) [][]complex128 {
 }
 
 func computeFFT2(x [][]complex128, fftFunc func([]complex128) []complex128) [][]complex128 {
-	return computeFFTN(dsputils.MakeMatrix2(x), fftFunc).To2D()
+	rows := len(x)
+	if rows == 0 {
+		panic("empty input array")
+	}
+
+	cols := len(x[0])
+	r := make([][]complex128, rows)
+	for i := 0; i < rows; i++ {
+		if len(x[i]) != cols {
+			panic("ragged input array")
+		}
+		r[i] = make([]complex128, cols)
+	}
+
+	for i := 0; i < cols; i++ {
+		t := make([]complex128, rows)
+		for j := 0; j < rows; j++ {
+			t[j] = x[j][i]
+		}
+
+		for n, v := range fftFunc(t) {
+			r[n][i] = v
+		}
+	}
+
+	for n, v := range r {
+		r[n] = fftFunc(v)
+	}
+
+	return r
 }
 
 // FFTN returns the forward FFT of the matrix m, computed in all N dimensions.
