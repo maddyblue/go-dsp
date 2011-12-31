@@ -277,12 +277,28 @@ func computeFFT2(x [][]complex128, fftFunc func([]complex128) []complex128) [][]
 	return computeFFTN(dsputils.MakeMatrix2(x), fftFunc).To2D()
 }
 
-func computeFFTN(m dsputils.Matrix, fftFunc func([]complex128) []complex128) dsputils.Matrix {
-	dims = m.Dimensions()
+// FFTN returns the forward FFT of the matrix m, computed in all N dimensions.
+func FFTN(m *dsputils.Matrix) *dsputils.Matrix {
+	return computeFFTN(m, FFT)
+}
+
+// IFFTN returns the forward FFT of the matrix m, computed in all N dimensions.
+func IFFTN(m *dsputils.Matrix) *dsputils.Matrix {
+	return computeFFTN(m, IFFT)
+}
+
+func computeFFTN(m *dsputils.Matrix, fftFunc func([]complex128) []complex128) *dsputils.Matrix {
+	dims := m.Dimensions()
 	t := m.Copy()
 	r := dsputils.MakeEmptyMatrix(dims)
-	for n, v := dims {
-		d = m.Dimensions()
+
+	for n := range dims {
+		dims[n] -= 1
+	}
+
+	for n := range dims {
+		d := make([]int, len(dims))
+		copy(d, dims)
 		d[n] = -1
 
 		for {
@@ -299,31 +315,33 @@ func computeFFTN(m dsputils.Matrix, fftFunc func([]complex128) []complex128) dsp
 	return t
 }
 
+// decrDim decrements an element of x by 1, skipping all -1s, and wrapping up to d.
+// If a value is 0, it will be reset to its correspending value in d, and will carry one from the next non -1 value to the right.
 // Returns true if decremented, else false.
 func decrDim(x, d []int) bool {
 	for n, v := range x {
 		if v == -1 {
 			continue
 		} else if v == 0 {
-			i := n + 1
+			i := n
 			// find the next element to decrement
 			for ; i < len(x); i++ {
 				if x[i] == -1 {
 					continue
+				} else if x[i] == 0 {
+					x[i] = d[i]
+				} else {
+					x[i] -= 1
+					return true
 				}
-
-
 			}
 
-			// everything is zero
-			if i == len(x) {
-				return false
-			}
+			// no decrement
+			return false
 		} else {
 			x[n] -= 1
+			return true
 		}
-
-		return true
 	}
 
 	return false

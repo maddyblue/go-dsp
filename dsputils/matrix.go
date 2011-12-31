@@ -34,7 +34,7 @@ type Matrix struct {
 //     7, 8, 9, 0,
 //     4, 3, 2, 1},
 //   []int {2, 3, 4})
-func MakeMatrix(x []complex128, dims []int) Matrix {
+func MakeMatrix(x []complex128, dims []int) *Matrix {
 	length := 1
 	offsets := make([]int, len(dims))
 
@@ -51,34 +51,36 @@ func MakeMatrix(x []complex128, dims []int) Matrix {
 		panic("incorrect dimensions")
 	}
 
-	return Matrix{x, dims, offsets}
+	dc := make([]int, len(dims))
+	copy(dc, dims)
+	return &Matrix{x, dc, offsets}
 }
 
 // MakeMatrix2 is a helper function to convert a 2-d array to a matrix.
-func MakeMatrix2(x [][]complex128) Matrix {
-	dims := []int {len(x), len(x[0])}
-	r := make([]complex128, dims[0] * dims[1])
+func MakeMatrix2(x [][]complex128) *Matrix {
+	dims := []int{len(x), len(x[0])}
+	r := make([]complex128, dims[0]*dims[1])
 	for n, v := range x {
 		if len(v) != dims[1] {
 			panic("ragged array")
 		}
 
-		copy(r[n * dims[1]:(n + 1) * dims[1]], v)
+		copy(r[n*dims[1]:(n+1)*dims[1]], v)
 	}
 
 	return MakeMatrix(r, dims)
 }
 
 // Copy returns a new copy of m.
-func (m Matrix) Copy() Matrix {
-	r := Matrix{m.list, m.dims, m.offsets}
+func (m *Matrix) Copy() *Matrix {
+	r := &Matrix{m.list, m.dims, m.offsets}
 	r.list = make([]complex128, len(m.list))
 	copy(r.list, m.list)
 	return r
 }
 
 // MakeEmptyMatrix creates an empty Matrix with given dimensions.
-func MakeEmptyMatrix(dims []int) Matrix {
+func MakeEmptyMatrix(dims []int) *Matrix {
 	x := 1
 	for _, v := range dims {
 		x *= v
@@ -88,7 +90,7 @@ func MakeEmptyMatrix(dims []int) Matrix {
 }
 
 // offset returns the index in the one-dimensional array
-func (s Matrix) offset(dims []int) int {
+func (s *Matrix) offset(dims []int) int {
 	if len(dims) != len(s.dims) {
 		panic("incorrect dimensions")
 	}
@@ -105,7 +107,7 @@ func (s Matrix) offset(dims []int) int {
 	return i
 }
 
-func (m Matrix) indexes(dims []int) []int {
+func (m *Matrix) indexes(dims []int) []int {
 	i := -1
 	for n, v := range dims {
 		if v == -1 {
@@ -139,7 +141,7 @@ func (m Matrix) indexes(dims []int) []int {
 }
 
 // Dimensions returns the dimension array of the Matrix.
-func (m Matrix) Dimensions() []int {
+func (m *Matrix) Dimensions() []int {
 	r := make([]int, len(m.dims))
 	copy(r, m.dims)
 	return r
@@ -151,7 +153,7 @@ func (m Matrix) Dimensions() []int {
 //   m.Dim([]int {1, 0, -1}) = []complex128 {3, 4, 5, 6}
 //   m.Dim([]int {0, -1, 2}) = []complex128 {3, 7, 1}
 //   m.Dim([]int {-1, 1, 3}) = []complex128 {8, 0}
-func (s Matrix) Dim(dims []int) []complex128 {
+func (s *Matrix) Dim(dims []int) []complex128 {
 	inds := s.indexes(dims)
 	r := make([]complex128, len(inds))
 	for n, v := range inds {
@@ -161,7 +163,7 @@ func (s Matrix) Dim(dims []int) []complex128 {
 	return r
 }
 
-func (m Matrix) SetDim(x []complex128, dims []int) {
+func (m *Matrix) SetDim(x []complex128, dims []int) {
 	inds := m.indexes(dims)
 	if len(x) != len(inds) {
 		panic("incorrect array length")
@@ -174,19 +176,19 @@ func (m Matrix) SetDim(x []complex128, dims []int) {
 
 // Value returns the value at the given index.
 // m.Value([]int {1, 2, 3, 4}) is equivalent to m[1][2][3][4].
-func (s Matrix) Value(dims []int) complex128 {
+func (s *Matrix) Value(dims []int) complex128 {
 	return s.list[s.offset(dims)]
 }
 
 // SetValue sets the value at the given index.
 // m.SetValue(10, []int {1, 2, 3, 4}) is equivalent to m[1][2][3][4] = 10.
-func (s Matrix) SetValue(x complex128, dims []int) {
+func (s *Matrix) SetValue(x complex128, dims []int) {
 	s.list[s.offset(dims)] = x
 }
 
 // To2D returns the 2-D array equivalent of the Matrix.
 // Only works on Matrixes of 2 dimensions.
-func (m Matrix) To2D() [][]complex128 {
+func (m *Matrix) To2D() [][]complex128 {
 	if len(m.dims) != 2 {
 		panic("can only convert 2-D Matrixes")
 	}
@@ -194,8 +196,21 @@ func (m Matrix) To2D() [][]complex128 {
 	r := make([][]complex128, m.dims[0])
 	for i := 0; i < m.dims[0]; i++ {
 		r[i] = make([]complex128, m.dims[1])
-		copy(r[i], m.list[i * m.dims[1]:(i + 1) * m.dims[1]])
+		copy(r[i], m.list[i*m.dims[1]:(i+1)*m.dims[1]])
 	}
 
 	return r
+}
+
+// PrettyClose returns true if the Matrixes are very close, else false.
+// Comparison done using dsputils.PrettyCloseC().
+func (m *Matrix) PrettyClose(n *Matrix) bool {
+	// todo: use new slice equality comparison
+	for i, v := range m.dims {
+		if v != n.dims[i] {
+			return false
+		}
+	}
+
+	return PrettyCloseC(m.list, n.list)
 }

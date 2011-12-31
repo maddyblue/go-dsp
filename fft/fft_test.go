@@ -157,6 +157,25 @@ var fft2Tests = []fft2Test{
 	},
 }
 
+type fftnTest struct {
+	in  []float64
+	dim []int
+	out []complex128
+}
+
+var fftnTests = []fftnTest{
+	fftnTest{
+		[]float64{4, 2, 3, 8, 5, 6, 7, 2, 13, 24, 13, 17},
+		[]int{2, 2, 3},
+		[]complex128{
+			complex(104, 0), complex(12.5, 14.72243186), complex(12.5, -14.72243186),
+			complex(-42, 0), complex(-10.5, 6.06217783), complex(-10.5, -6.06217783),
+
+			complex(-48, 0), complex(-4.5, -11.25833025), complex(-4.5, 11.25833025),
+			complex(22, 0), complex(8.5, -6.06217783), complex(8.5, 6.06217783)},
+	},
+}
+
 func TestFFT(t *testing.T) {
 	for _, ft := range fftTests {
 		v := FFTReal(ft.in)
@@ -181,6 +200,22 @@ func TestFFT2(t *testing.T) {
 		vi := IFFT2(ft.out)
 		if !dsputils.PrettyClose2(vi, dsputils.ToComplex2(ft.in)) {
 			t.Error("IFFT2 error\ninput:", ft.out, "\noutput:", vi, "\nexpected:", dsputils.ToComplex2(ft.in))
+		}
+	}
+}
+
+func TestFFTN(t *testing.T) {
+	for _, ft := range fftnTests {
+		m := dsputils.MakeMatrix(dsputils.ToComplex(ft.in), ft.dim)
+		o := dsputils.MakeMatrix(ft.out, ft.dim)
+		v := FFTN(m)
+		if !v.PrettyClose(o) {
+			t.Error("FFTN error\ninput:", m, "\noutput:", v, "\nexpected:", o)
+		}
+
+		vi := IFFTN(o)
+		if !vi.PrettyClose(m) {
+			t.Error("IFFTN error\ninput:", o, "\noutput:", vi, "\nexpected:", m)
 		}
 	}
 }
