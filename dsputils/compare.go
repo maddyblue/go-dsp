@@ -52,7 +52,7 @@ func PrettyCloseC(a, b []complex128) bool {
 	return true
 }
 
-// PrettyClose returns true if the matrixes a and b are very close, else false.
+// PrettyClose2 returns true if the matrixes a and b are very close, else false.
 func PrettyClose2(a, b [][]complex128) bool {
 	if len(a) != len(b) {
 		return false
