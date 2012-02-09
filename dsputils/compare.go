@@ -78,5 +78,5 @@ func ComplexEqual(a, b complex128) bool {
 
 // Float64Equal returns true if a and b are very close, else false.
 func Float64Equal(a, b float64) bool {
-	return math.Fabs(a-b) <= closeFactor || math.Fabs(1-a/b) <= closeFactor
+	return math.Abs(a-b) <= closeFactor || math.Abs(1-a/b) <= closeFactor
 }

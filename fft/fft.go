@@ -18,9 +18,10 @@
 package fft
 
 import (
-	"dsputils"
 	"math"
 	"sync"
+
+	"github.com/mjibson/go-dsp/dsputils"
 )
 
 var (

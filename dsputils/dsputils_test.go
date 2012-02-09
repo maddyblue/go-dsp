@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011 Matt Jibson <matt.jibson@gmail.com>
+ * Copyright (c) 2012 Matt Jibson <matt.jibson@gmail.com>
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -14,36 +14,45 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-package window
+package dsputils
 
 import (
 	"testing"
-
-	"github.com/mjibson/go-dsp/dsputils"
 )
 
-type windowTest struct {
-	in      int
-	hamming []float64
+type segmentTest struct {
+	segs     int
+	noverlap float64
+	slices   [][]int
 }
 
-var windowTests = []windowTest{
-	windowTest{
-		5,
-		[]float64{0.08, 0.54, 1, 0.54, 0.08},
-	},
-
-	windowTest{
-		10,
-		[]float64{0.08, 0.18761956, 0.46012184, 0.77, 0.97225861, 0.97225861, 0.77, 0.46012184, 0.18761956, 0.08},
+var segmentTests = []segmentTest{
+	segmentTest{
+		3,
+		.5,
+		[][]int{
+			{0, 8},
+			{4, 12},
+			{8, 16},
+		},
 	},
 }
 
-func TestHamming(t *testing.T) {
-	for _, v := range windowTests {
-		o := Hamming(v.in)
-		if !dsputils.PrettyClose(o, v.hamming) {
-			t.Error("hamming error\ninput:", v.in, "\noutput:", o, "\nexpected:", v.hamming)
+func TestSegment(t *testing.T) {
+	x := make([]complex128, 16)
+	for n := range x {
+		x[n] = complex(float64(n), 0)
+	}
+
+	for _, st := range segmentTests {
+		v := Segment(x, st.segs, st.noverlap)
+		s := make([][]complex128, st.segs)
+		for i, sl := range st.slices {
+			s[i] = x[sl[0]:sl[1]]
+		}
+
+		if !PrettyClose2(v, s) {
+			t.Error("Segment error: expected:", s, ", output:", v)
 		}
 	}
 }

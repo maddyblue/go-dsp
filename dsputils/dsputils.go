@@ -70,16 +70,18 @@ func ToComplex2(x [][]float64) [][]complex128 {
 	return y
 }
 
-// Segment segments x into segs equal-length segments, all windowed by windowFunc with noverlap% of overlap. Trailing entries in x that connot be included in the equal-length segments are discarded.
-// Good defaults: Segment(x, 8, window.Hamming, 0.5). (0.5 = 50% overlap)
-func Segment(x []complex128, segs int, windowFunc func(int) []float64, noverlap float64) [][]complex128 {
+// Segment returns segs equal-length slices that are segments of x with noverlap% of overlap.
+// The returned slices are not copies of x, but slices into it.
+// Trailing entries in x that connot be included in the equal-length segments are discarded.
+// noverlap is a percentage, thus 0 <= noverlap <= 1, and noverlap = 0.5 is 50% overlap.
+func Segment(x []complex128, segs int, noverlap float64) [][]complex128 {
 	lx := len(x)
 
 	// determine step, length, and overlap
 	var overlap, length, step, tot int
 	for length = lx; length > 0; length-- {
 		overlap = int(float64(length) * noverlap)
-		tot = segs * (length - overlap) + overlap
+		tot = segs*(length-overlap) + overlap
 		if tot <= lx {
 			step = length - overlap
 			break
@@ -93,7 +95,7 @@ func Segment(x []complex128, segs int, windowFunc func(int) []float64, noverlap 
 	r := make([][]complex128, segs)
 	s := 0
 	for n := range r {
-		r[n] = x[s:s+length]
+		r[n] = x[s : s+length]
 		s += step
 	}
 

@@ -17,9 +17,10 @@
 package fft
 
 import (
-	"dsputils"
 	"math"
 	"testing"
+
+	"github.com/mjibson/go-dsp/dsputils"
 )
 
 const (
