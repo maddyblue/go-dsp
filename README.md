@@ -1,7 +1,6 @@
 # GO-DSP
 
 go-dsp is a digital signal processing package for the [Go programming language](http://golang.org).
-This package has been updated to support Go 1 syntax and packages. Support for 60.3 has been removed.
 
 ## Packages
 
@@ -30,13 +29,6 @@ func main() {
   * support float32/complex64 inputs
   * research possible performance gains with goroutines
 
-## Authors
-
-**Matt Jibson**
-
-* http://mattjibson.com/
-* http://github.com/mjibson
-
 ## License
 
-Licensed under the BSD license.
+ISC/BSD-style license.
