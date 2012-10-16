@@ -228,7 +228,7 @@ func log2(v uint) uint {
 	var r uint
 
 	for v >>= 1; v != 0; v >>= 1 {
-		r++;
+		r++
 	}
 
 	return r
