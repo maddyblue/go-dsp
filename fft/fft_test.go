@@ -235,6 +235,24 @@ func TestFFTN(t *testing.T) {
 	}
 }
 
+func BenchmarkFFT(b *testing.B) {
+	b.StopTimer()
+
+	N := 1 << 15
+	a := make([]float64, N)
+	for i := 0; i < N; i++ {
+		a[i] = float64(i)
+	}
+
+	getRadix2Factors(N)
+
+	b.StartTimer()
+
+	for i := 0; i < b.N; i++ {
+		FFTReal(a)
+	}
+}
+
 func TestReverseBits(t *testing.T) {
 	for _, rt := range reverseBitsTests {
 		v := reverseBits(rt.in, rt.sz)
