@@ -179,25 +179,8 @@ func radix2FFT(x []complex128) []complex128 {
 	factors := getRadix2Factors(lx)
 
 	lx_2 := lx / 2
-	r := make([]complex128, lx) // result
 	t := make([]complex128, lx) // temp
-	copy(r, x)
-
-	// split into even and odd parts for each stage
-	for block_sz := lx; block_sz > 1; block_sz >>= 1 {
-		i := 0
-		bs_2 := block_sz / 2
-		for block := 0; block < lx/block_sz; block++ {
-			for n := 0; n < bs_2; n++ {
-				bn := block_sz*block + n
-				t[bn] = r[i]
-				i++
-				t[bn+bs_2] = r[i]
-				i++
-			}
-		}
-		copy(r, t)
-	}
+	r := reorderData(x)
 
 	for stage := 2; stage <= lx; stage <<= 1 {
 		if stage == 2 { // 2-point transforms
@@ -223,6 +206,51 @@ func radix2FFT(x []complex128) []complex128 {
 	}
 
 	return r
+}
+
+// reorderData returns a copy of x reordered for the DFT.
+func reorderData(x []complex128) []complex128 {
+	lx := uint(len(x))
+	r := make([]complex128, lx)
+	s := log2(lx)
+
+	var n uint
+	for ; n < lx; n++ {
+		r[reverseBits(n, s)] = x[n]
+	}
+
+	return r
+}
+
+// log2 returns the log base 2 of v
+// from: http://graphics.stanford.edu/~seander/bithacks.html#IntegerLogObvious
+func log2(v uint) uint {
+	var r uint
+
+	for v >>= 1; v != 0; v >>= 1 {
+		r++;
+	}
+
+	return r
+}
+
+// reverseBits returns the first s bits of v in reverse order
+// from: http://graphics.stanford.edu/~seander/bithacks.html#BitReverseObvious
+func reverseBits(v, s uint) uint {
+	var r uint
+
+	// Since we aren't reversing all the bits in v (just the first s bits),
+	// we only need the first bit of v instead of a full copy.
+	r = v & 1
+	s--
+
+	for v >>= 1; v != 0; v >>= 1 {
+		r <<= 1
+		r |= v & 1
+		s--
+	}
+
+	return r << s
 }
 
 // bluesteinFFT returns the FFT calculated using the Bluestein algorithm.

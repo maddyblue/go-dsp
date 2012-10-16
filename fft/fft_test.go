@@ -177,6 +177,20 @@ var fftnTests = []fftnTest{
 	},
 }
 
+type reverseBitsTest struct {
+	in  uint
+	sz  uint
+	out uint
+}
+
+var reverseBitsTests = []reverseBitsTest{
+	reverseBitsTest{0, 1, 0},
+	reverseBitsTest{1, 2, 2},
+	reverseBitsTest{1, 4, 8},
+	reverseBitsTest{2, 4, 4},
+	reverseBitsTest{3, 4, 12},
+}
+
 func TestFFT(t *testing.T) {
 	for _, ft := range fftTests {
 		v := FFTReal(ft.in)
@@ -217,6 +231,16 @@ func TestFFTN(t *testing.T) {
 		vi := IFFTN(o)
 		if !vi.PrettyClose(m) {
 			t.Error("IFFTN error\ninput:", o, "\noutput:", vi, "\nexpected:", m)
+		}
+	}
+}
+
+func TestReverseBits(t *testing.T) {
+	for _, rt := range reverseBitsTests {
+		v := reverseBits(rt.in, rt.sz)
+
+		if v != rt.out {
+			t.Error("reverse bits error\ninput:", rt.in, "\nsize:", rt.sz, "\noutput:", v, "\nexpected:", rt.out)
 		}
 	}
 }
