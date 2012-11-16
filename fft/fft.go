@@ -181,7 +181,6 @@ func radix2FFT(x []complex128) []complex128 {
 	lx_2 := lx / 2
 	t := make([]complex128, lx) // temp
 	r := reorderData(x)
-	var swp []complex128
 
 	for stage := 2; stage <= lx; stage <<= 1 {
 		if stage == 2 { // 2-point transforms
@@ -203,9 +202,7 @@ func radix2FFT(x []complex128) []complex128 {
 			}
 		}
 
-		swp = t
-		t = r
-		r = swp
+		r, t = t, r
 	}
 
 	return r
