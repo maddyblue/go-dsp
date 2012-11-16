@@ -235,6 +235,7 @@ func TestFFTN(t *testing.T) {
 	}
 }
 
+// run with: go test -test.bench="."
 func BenchmarkFFT(b *testing.B) {
 	b.StopTimer()
 
