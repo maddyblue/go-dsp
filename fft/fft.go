@@ -178,15 +178,17 @@ func radix2FFT(x []complex128) []complex128 {
 	lx := len(x)
 	factors := getRadix2Factors(lx)
 
-	lx_2 := lx / 2
 	t := make([]complex128, lx) // temp
 	r := reorderData(x)
 
 	for stage := 2; stage <= lx; stage <<= 1 {
 		if stage == 2 { // 2-point transforms
-			for n := 0; n < lx_2; n++ {
-				t[n*2] = r[n*2] + r[n*2+1]
-				t[n*2+1] = r[n*2] - r[n*2+1]
+			for n := 0; n < lx; n += 2 {
+				n1 := n + 1
+				rn := r[n]
+				rn1 := r[n1]
+				t[n] = rn + rn1
+				t[n1] = rn - rn1
 			}
 		} else { // >2-point transforms
 			blocks := lx / stage
@@ -197,9 +199,10 @@ func radix2FFT(x []complex128) []complex128 {
 				for j := 0; j < s_2; j++ {
 					idx := j + nb
 					idx2 := idx + s_2
+					ridx := r[idx]
 					w_n := r[idx2] * factors[blocks*j]
-					t[idx] = r[idx] + w_n
-					t[idx2] = r[idx] - w_n
+					t[idx] = ridx + w_n
+					t[idx2] = ridx - w_n
 				}
 			}
 		}
