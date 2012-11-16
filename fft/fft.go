@@ -195,9 +195,11 @@ func radix2FFT(x []complex128) []complex128 {
 			for n := 0; n < blocks; n++ {
 				nb := n * stage
 				for j := 0; j < s_2; j++ {
-					w_n := r[j+nb+s_2] * factors[blocks*j]
-					t[j+nb] = r[j+nb] + w_n
-					t[j+nb+s_2] = r[j+nb] - w_n
+					idx := j + nb
+					idx2 := idx + s_2
+					w_n := r[idx2] * factors[blocks*j]
+					t[idx] = r[idx] + w_n
+					t[idx2] = r[idx] - w_n
 				}
 			}
 		}
