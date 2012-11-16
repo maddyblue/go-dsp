@@ -239,9 +239,9 @@ func BenchmarkFFT(b *testing.B) {
 	b.StopTimer()
 
 	N := 1 << 15
-	a := make([]float64, N)
+	a := make([]complex128, N)
 	for i := 0; i < N; i++ {
-		a[i] = float64(i)
+		a[i] = complex(float64(i)/float64(N), 0)
 	}
 
 	getRadix2Factors(N)
@@ -249,7 +249,7 @@ func BenchmarkFFT(b *testing.B) {
 	b.StartTimer()
 
 	for i := 0; i < b.N; i++ {
-		FFTReal(a)
+		FFT(a)
 	}
 }
 
