@@ -18,6 +18,7 @@ package fft
 
 import (
 	"math"
+	"runtime"
 	"testing"
 
 	"github.com/mjibson/go-dsp/dsputils"
@@ -235,11 +236,28 @@ func TestFFTN(t *testing.T) {
 	}
 }
 
+func TestReverseBits(t *testing.T) {
+	for _, rt := range reverseBitsTests {
+		v := reverseBits(rt.in, rt.sz)
+
+		if v != rt.out {
+			t.Error("reverse bits error\ninput:", rt.in, "\nsize:", rt.sz, "\noutput:", v, "\nexpected:", rt.out)
+		}
+	}
+}
+
 // run with: go test -test.bench="."
 func BenchmarkFFT(b *testing.B) {
 	b.StopTimer()
 
-	N := 1 << 15
+	runtime.GOMAXPROCS(6)
+	MP_METHOD = MP_METHOD_WORKER_POOLS
+	MP_METHOD = MP_METHOD_WAIT_GROUP
+	WORKER_POOLS_COUNT = 6
+	MP_MIN_BLOCKSIZE = 1 << 8
+	//runtime.GOMAXPROCS(runtime.NumCPU())
+
+	N := 1 << 20
 	a := make([]complex128, N)
 	for i := 0; i < N; i++ {
 		a[i] = complex(float64(i)/float64(N), 0)
@@ -251,15 +269,5 @@ func BenchmarkFFT(b *testing.B) {
 
 	for i := 0; i < b.N; i++ {
 		FFT(a)
-	}
-}
-
-func TestReverseBits(t *testing.T) {
-	for _, rt := range reverseBitsTests {
-		v := reverseBits(rt.in, rt.sz)
-
-		if v != rt.out {
-			t.Error("reverse bits error\ninput:", rt.in, "\nsize:", rt.sz, "\noutput:", v, "\nexpected:", rt.out)
-		}
 	}
 }
