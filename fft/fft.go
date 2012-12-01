@@ -180,16 +180,8 @@ func FFT(x []complex128) []complex128 {
 	return bluesteinFFT(x)
 }
 
-const (
-	MP_METHOD_NORMAL = iota
-	MP_METHOD_WAIT_GROUP
-	MP_METHOD_WORKER_POOLS
-)
-
 var (
-	MP_MIN_BLOCKSIZE   int = 1 << 2
-	MP_METHOD          int = MP_METHOD_WORKER_POOLS
-	WORKER_POOLS_COUNT     = 1
+	WORKER_POOL_SIZE     = 2
 )
 
 // radix2FFT returns the FFT calculated using the radix-2 DIT Cooley-Tukey algorithm.
@@ -200,54 +192,18 @@ func radix2FFT(x []complex128) []complex128 {
 	t := make([]complex128, lx) // temp
 	r := reorderData(x)
 
-	var wg sync.WaitGroup
-	var blocks, s_2 int
+	var blocks, stage, s_2 int
+	var workers, idx_diff int
 
-	var jobs chan int
-	var results chan bool
+	// Create N workers. Each is responsible for its 1/Nth part of the array.
+	worker := func(start, end int, job <-chan bool, result chan<- bool) {
+		for _ = range job {
+			if stage != 2 {
+				for nb := 0; nb < lx; nb += stage {
+					if nb < start || nb >= end {
+						continue
+					}
 
-	if MP_METHOD == MP_METHOD_WORKER_POOLS {
-		worker := func() {
-			for nb := range jobs {
-				for j := 0; j < s_2; j++ {
-					idx := j + nb
-					idx2 := idx + s_2
-					ridx := r[idx]
-					w_n := r[idx2] * factors[blocks*j]
-					t[idx] = ridx + w_n
-					t[idx2] = ridx - w_n
-				}
-
-				results <- true
-			}
-		}
-
-		jobs = make(chan int, lx)
-		results = make(chan bool, lx)
-
-		for i := 0; i < WORKER_POOLS_COUNT; i++ {
-			go worker()
-		}
-
-		defer close(jobs)
-	}
-
-	for stage := 2; stage <= lx; stage <<= 1 {
-		if stage == 2 { // 2-point transforms
-			for n := 0; n < lx; n += 2 {
-				n1 := n + 1
-				rn := r[n]
-				rn1 := r[n1]
-				t[n] = rn + rn1
-				t[n1] = rn - rn1
-			}
-		} else { // >2-point transforms
-			blocks = lx / stage
-			s_2 = stage / 2
-
-			if s_2 < MP_MIN_BLOCKSIZE || MP_METHOD == MP_METHOD_NORMAL {
-				for n := 0; n < blocks; n++ {
-					nb := n * stage
 					for j := 0; j < s_2; j++ {
 						idx := j + nb
 						idx2 := idx + s_2
@@ -257,34 +213,59 @@ func radix2FFT(x []complex128) []complex128 {
 						t[idx2] = ridx - w_n
 					}
 				}
-			} else if MP_METHOD == MP_METHOD_WAIT_GROUP {
-				wg.Add(blocks)
-				for n := 0; n < blocks; n++ {
-					go (func(nb int) {
-						for j := 0; j < s_2; j++ {
-							idx := j + nb
-							idx2 := idx + s_2
-							ridx := r[idx]
-							w_n := r[idx2] * factors[blocks*j]
-							t[idx] = ridx + w_n
-							t[idx2] = ridx - w_n
-						}
+			} else {
+				for n := 0; n < lx; n += 2 {
+					if n < start || n >= end {
+						continue
+					}
 
-						wg.Done()
-					})(n * stage)
-				}
-
-				wg.Wait()
-
-			} else if MP_METHOD == MP_METHOD_WORKER_POOLS {
-				for n := 0; n < blocks; n++ {
-					jobs <- n * stage
-				}
-
-				for n := 0; n < blocks; n++ {
-					<-results
+					n1 := n + 1
+					rn := r[n]
+					rn1 := r[n1]
+					t[n] = rn + rn1
+					t[n1] = rn - rn1
 				}
 			}
+
+			result <- true
+		}
+	}
+
+	workers = WORKER_POOL_SIZE
+
+	if workers > lx / 2 {
+		workers = lx / 2
+	}
+
+	idx_diff = lx / workers
+
+	jobs := make([]chan bool, workers)
+	results := make([]chan bool, workers)
+
+	for i, start, end := 0, 0, 0; i < workers; i, start = i + 1, start + idx_diff {
+		jobs[i] = make(chan bool)
+		results[i] = make(chan bool)
+
+		if i + 1 == workers {
+			end = lx
+		} else {
+			end = start + idx_diff
+		}
+
+		go worker(start, end, jobs[i], results[i])
+		defer close(jobs[i])
+	}
+
+	for stage = 2; stage <= lx; stage <<= 1 {
+		blocks = lx / stage
+		s_2 = stage / 2
+
+		for n := 0; n < workers; n++ {
+			jobs[n] <- true
+		}
+
+		for n := 0; n < workers; n++ {
+			<-results[n]
 		}
 
 		r, t = t, r

@@ -246,15 +246,24 @@ func TestReverseBits(t *testing.T) {
 	}
 }
 
+func TestFFTMulti(t *testing.T) {
+	WORKER_POOL_SIZE = 5
+
+	N := 1 << 8
+	a := make([]complex128, N)
+	for i := 0; i < N; i++ {
+		a[i] = complex(float64(i)/float64(N), 0)
+	}
+
+	FFT(a)
+}
+
 // run with: go test -test.bench="."
 func BenchmarkFFT(b *testing.B) {
 	b.StopTimer()
 
 	runtime.GOMAXPROCS(6)
-	MP_METHOD = MP_METHOD_WORKER_POOLS
-	MP_METHOD = MP_METHOD_WAIT_GROUP
-	WORKER_POOLS_COUNT = 6
-	MP_MIN_BLOCKSIZE = 1 << 8
+	WORKER_POOL_SIZE = 6
 	//runtime.GOMAXPROCS(runtime.NumCPU())
 
 	N := 1 << 20
