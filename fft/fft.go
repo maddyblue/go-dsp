@@ -181,8 +181,12 @@ func FFT(x []complex128) []complex128 {
 }
 
 var (
-	WORKER_POOL_SIZE     = 2
+	WORKER_POOL_SIZE = 2
 )
+
+type fft_work struct {
+	start, end int
+}
 
 // radix2FFT returns the FFT calculated using the radix-2 DIT Cooley-Tukey algorithm.
 func radix2FFT(x []complex128) []complex128 {
@@ -193,17 +197,19 @@ func radix2FFT(x []complex128) []complex128 {
 	r := reorderData(x)
 
 	var blocks, stage, s_2 int
-	var workers, idx_diff int
 
-	// Create N workers. Each is responsible for its 1/Nth part of the array.
-	worker := func(start, end int, job <-chan bool, result chan<- bool) {
-		for _ = range job {
-			if stage != 2 {
-				for nb := 0; nb < lx; nb += stage {
-					if nb < start || nb >= end {
-						continue
-					}
+	jobs := make(chan *fft_work, lx)
+	results := make(chan bool, lx)
 
+	idx_diff := lx / WORKER_POOL_SIZE
+	if idx_diff < 2 {
+		idx_diff = 2
+	}
+
+	worker := func() {
+		for work := range jobs {
+			for nb := work.start; nb < work.end; nb += stage {
+				if stage != 2 {
 					for j := 0; j < s_2; j++ {
 						idx := j + nb
 						idx2 := idx + s_2
@@ -212,60 +218,46 @@ func radix2FFT(x []complex128) []complex128 {
 						t[idx] = ridx + w_n
 						t[idx2] = ridx - w_n
 					}
-				}
-			} else {
-				for n := 0; n < lx; n += 2 {
-					if n < start || n >= end {
-						continue
-					}
-
-					n1 := n + 1
-					rn := r[n]
+				} else {
+					n1 := nb + 1
+					rn := r[nb]
 					rn1 := r[n1]
-					t[n] = rn + rn1
+					t[nb] = rn + rn1
 					t[n1] = rn - rn1
 				}
 			}
 
-			result <- true
+			results <- true
 		}
 	}
 
-	workers = WORKER_POOL_SIZE
-
-	if workers > lx / 2 {
-		workers = lx / 2
+	for i := 0; i < WORKER_POOL_SIZE; i++ {
+		go worker()
 	}
-
-	idx_diff = lx / workers
-
-	jobs := make([]chan bool, workers)
-	results := make([]chan bool, workers)
-
-	for i, start, end := 0, 0, 0; i < workers; i, start = i + 1, start + idx_diff {
-		jobs[i] = make(chan bool)
-		results[i] = make(chan bool)
-
-		if i + 1 == workers {
-			end = lx
-		} else {
-			end = start + idx_diff
-		}
-
-		go worker(start, end, jobs[i], results[i])
-		defer close(jobs[i])
-	}
+	defer close(jobs)
 
 	for stage = 2; stage <= lx; stage <<= 1 {
 		blocks = lx / stage
 		s_2 = stage / 2
+		workers_spawned := 0
 
-		for n := 0; n < workers; n++ {
-			jobs[n] <- true
+		for start, end := 0, stage; ; {
+			if end - start >= idx_diff || end == lx {
+				workers_spawned++
+				jobs <- &fft_work { start, end }
+
+				if end == lx {
+					break
+				}
+
+				start = end
+			}
+
+			end += stage
 		}
 
-		for n := 0; n < workers; n++ {
-			<-results[n]
+		for n := 0; n < workers_spawned; n++ {
+			<-results
 		}
 
 		r, t = t, r
