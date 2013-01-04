@@ -19,6 +19,7 @@ package fft
 
 import (
 	"math"
+	"runtime"
 	"sync"
 
 	"github.com/mjibson/go-dsp/dsputils"
@@ -181,13 +182,16 @@ func FFT(x []complex128) []complex128 {
 }
 
 var (
-	worker_pool_size = 1
+	worker_pool_size = 0
 )
 
-// SetWorkerPoolSize sets the number of workers during FFT computation on
-// multicore systems. This should generally be set to GOMAXPROCS (which must
-// also be done by the user).
+// SetWorkerPoolSize sets the number of workers during FFT computation on multicore systems.
+// If n is 0 (the default), then GOMAXPROCS workers will be created.
 func SetWorkerPoolSize(n int) {
+	if n < 0 {
+		n = 0
+	}
+
 	worker_pool_size = n
 }
 
@@ -208,7 +212,12 @@ func radix2FFT(x []complex128) []complex128 {
 	jobs := make(chan *fft_work, lx)
 	results := make(chan bool, lx)
 
-	idx_diff := lx / worker_pool_size
+	num_workers := worker_pool_size
+	if (num_workers) == 0 {
+		num_workers = runtime.GOMAXPROCS(0)
+	}
+
+	idx_diff := lx / num_workers
 	if idx_diff < 2 {
 		idx_diff = 2
 	}
@@ -238,7 +247,7 @@ func radix2FFT(x []complex128) []complex128 {
 		}
 	}
 
-	for i := 0; i < worker_pool_size; i++ {
+	for i := 0; i < num_workers; i++ {
 		go worker()
 	}
 	defer close(jobs)
