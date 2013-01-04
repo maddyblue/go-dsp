@@ -146,7 +146,7 @@ func IFFT(x []complex128) []complex128 {
 	return r
 }
 
-// Convolve returns the convolution of x * y.
+// Convolve returns the convolution of x ∗ y.
 func Convolve(x, y []complex128) []complex128 {
 	if len(x) != len(y) {
 		panic("arrays not of equal size")
