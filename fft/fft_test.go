@@ -271,7 +271,7 @@ func BenchmarkFFT(b *testing.B) {
 		a[i] = complex(float64(i)/float64(N), 0)
 	}
 
-	getRadix2Factors(N)
+	EnsureRadix2Factors(N)
 
 	b.StartTimer()
 
