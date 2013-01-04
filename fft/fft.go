@@ -181,8 +181,15 @@ func FFT(x []complex128) []complex128 {
 }
 
 var (
-	WORKER_POOL_SIZE = 1
+	worker_pool_size = 1
 )
+
+// SetWorkerPoolSize sets the number of workers during FFT computation on
+// multicore systems. This should generally be set to GOMAXPROCS (which must
+// also be done by the user).
+func SetWorkerPoolSize(n int) {
+	worker_pool_size = n
+}
 
 type fft_work struct {
 	start, end int
@@ -201,7 +208,7 @@ func radix2FFT(x []complex128) []complex128 {
 	jobs := make(chan *fft_work, lx)
 	results := make(chan bool, lx)
 
-	idx_diff := lx / WORKER_POOL_SIZE
+	idx_diff := lx / worker_pool_size
 	if idx_diff < 2 {
 		idx_diff = 2
 	}
@@ -231,7 +238,7 @@ func radix2FFT(x []complex128) []complex128 {
 		}
 	}
 
-	for i := 0; i < WORKER_POOL_SIZE; i++ {
+	for i := 0; i < worker_pool_size; i++ {
 		go worker()
 	}
 	defer close(jobs)

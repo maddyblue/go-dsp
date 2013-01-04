@@ -247,7 +247,7 @@ func TestReverseBits(t *testing.T) {
 }
 
 func TestFFTMulti(t *testing.T) {
-	WORKER_POOL_SIZE = 5
+	SetWorkerPoolSize(5)
 
 	N := 1 << 8
 	a := make([]complex128, N)
@@ -263,8 +263,7 @@ func BenchmarkFFT(b *testing.B) {
 	b.StopTimer()
 
 	runtime.GOMAXPROCS(6)
-	WORKER_POOL_SIZE = 6
-	//runtime.GOMAXPROCS(runtime.NumCPU())
+	SetWorkerPoolSize(6)
 
 	N := 1 << 20
 	a := make([]complex128, N)
