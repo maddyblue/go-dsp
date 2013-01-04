@@ -249,9 +249,9 @@ func radix2FFT(x []complex128) []complex128 {
 		workers_spawned := 0
 
 		for start, end := 0, stage; ; {
-			if end - start >= idx_diff || end == lx {
+			if end-start >= idx_diff || end == lx {
 				workers_spawned++
-				jobs <- &fft_work { start, end }
+				jobs <- &fft_work{start, end}
 
 				if end == lx {
 					break
