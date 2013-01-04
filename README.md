@@ -27,7 +27,6 @@ func main() {
 
 * fft:
   * support float32/complex64 inputs
-  * research possible performance gains with goroutines
 
 ## License
 
