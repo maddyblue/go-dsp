@@ -181,7 +181,7 @@ func FFT(x []complex128) []complex128 {
 }
 
 var (
-	WORKER_POOL_SIZE = 2
+	WORKER_POOL_SIZE = 1
 )
 
 type fft_work struct {
