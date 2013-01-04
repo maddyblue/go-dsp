@@ -20,23 +20,10 @@ func main() {
 		for n := 1; n <= runtime.NumCPU(); n++ {
 			numprocs = n
 
-			for i := MAX_N; i > 0; i >>= 1 {
-				fft.MP_MIN_BLOCKSIZE = i
-
-				fft.MP_METHOD = fft.MP_METHOD_NORMAL
+			for j := 1; j <= n * 2; j++ {
+				fft.WORKER_POOL_SIZE = j
 				r = testing.Benchmark(BenchmarkFFT)
-				fmt.Printf("%20s %12d %2d %10d %12d\n", "normal", MAX_N, numprocs, i, r.NsPerOp())
-
-				fft.MP_METHOD = fft.MP_METHOD_WAIT_GROUP
-				r = testing.Benchmark(BenchmarkFFT)
-				fmt.Printf("%20s %12d %2d %10d %12d\n", "waitgroups", MAX_N, numprocs, i, r.NsPerOp())
-
-				fft.MP_METHOD = fft.MP_METHOD_WORKER_POOLS
-				for j := 1; j <= n * 2; j++ {
-					fft.WORKER_POOLS_COUNT = j
-					r = testing.Benchmark(BenchmarkFFT)
-					fmt.Printf("%17s-%02d %12d %2d %10d %12d\n", "workerpools", j, MAX_N, numprocs, i, r.NsPerOp())
-				}
+				fmt.Printf("WPS: %02d N: %12d procs: %2d ns: %12d\n", j, MAX_N, numprocs, r.NsPerOp())
 			}
 		}
 	}
