@@ -17,6 +17,10 @@
 // Package window provides window functions for digital signal processing.
 package window
 
+import (
+	"math"
+)
+
 // Apply applies the window windowFunction to x.
 func Apply(x []float64, windowFunction func(int) []float64) {
 	for i, w := range windowFunction(len(x)) {
@@ -30,6 +34,52 @@ func Rectangular(L int) []float64 {
 
 	for i := range r {
 		r[i] = 1
+	}
+
+	return r
+}
+
+// Hamming returns an L-point symmetric Hamming window.
+// Reference: http://www.mathworks.com/help/signal/ref/hamming.html
+func Hamming(L int) []float64 {
+	r := make([]float64, L)
+
+	N := L - 1
+	coef := math.Pi * 2 / float64(N)
+	for n := 0; n <= N; n++ {
+		r[n] = 0.54 - 0.46*math.Cos(coef*float64(n))
+	}
+
+	return r
+}
+
+// Hann returns an L-point Hann window.
+// Reference: http://www.mathworks.com/help/signal/ref/hann.html
+func Hann(L int) []float64 {
+	r := make([]float64, L)
+
+	N := L - 1
+	coef := 2 * math.Pi / float64(N)
+	for n := 0; n <= N; n++ {
+		r[n] = 0.5 * (1 - math.Cos(coef*float64(n)))
+	}
+
+	return r
+}
+
+// Bartlett returns an L-point Bartlett window.
+// Reference: http://www.mathworks.com/help/signal/ref/bartlett.html
+func Bartlett(L int) []float64 {
+	r := make([]float64, L)
+
+	N := L - 1
+	coef := 2 / float64(N)
+	n := 0
+	for ; n <= N / 2; n++ {
+		r[n] = coef * float64(n)
+	}
+	for ; n <= N; n++ {
+		r[n] = 2 - coef * float64(n)
 	}
 
 	return r

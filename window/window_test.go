@@ -25,17 +25,23 @@ import (
 type windowTest struct {
 	in      int
 	hamming []float64
+	hann    []float64
+	bartlett []float64
 }
 
 var windowTests = []windowTest{
 	windowTest{
 		5,
 		[]float64{0.08, 0.54, 1, 0.54, 0.08},
+		[]float64{0, 0.5, 1, 0.5, 0},
+		[]float64{0, 0.5, 1, 0.5, 0},
 	},
 
 	windowTest{
 		10,
 		[]float64{0.08, 0.18761956, 0.46012184, 0.77, 0.97225861, 0.97225861, 0.77, 0.46012184, 0.18761956, 0.08},
+		[]float64{0, 0.116977778440511, 0.413175911166535, 0.75, 0.969846310392954, 0.969846310392954, 0.75, 0.413175911166535, 0.116977778440511, 0},
+		[]float64{0, 0.222222222222222, 0.444444444444444, 0.666666666666667, 0.888888888888889, 0.888888888888889, 0.666666666666667, 0.444444444444444, 0.222222222222222, 0},
 	},
 }
 
@@ -44,6 +50,16 @@ func TestWindowFunctions(t *testing.T) {
 		o := Hamming(v.in)
 		if !dsputils.PrettyClose(o, v.hamming) {
 			t.Error("hamming error\ninput:", v.in, "\noutput:", o, "\nexpected:", v.hamming)
+		}
+
+		o = Hann(v.in)
+		if !dsputils.PrettyClose(o, v.hann) {
+			t.Error("hann error\ninput:", v.in, "\noutput:", o, "\nexpected:", v.hann)
+		}
+
+		o = Bartlett(v.in)
+		if !dsputils.PrettyClose(o, v.bartlett) {
+			t.Error("bartlett error\ninput:", v.in, "\noutput:", o, "\nexpected:", v.bartlett)
 		}
 
 		o = Rectangular(v.in)
