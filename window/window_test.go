@@ -23,9 +23,9 @@ import (
 )
 
 type windowTest struct {
-	in      int
-	hamming []float64
-	hann    []float64
+	in       int
+	hamming  []float64
+	hann     []float64
 	bartlett []float64
 }
 

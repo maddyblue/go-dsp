@@ -75,11 +75,11 @@ func Bartlett(L int) []float64 {
 	N := L - 1
 	coef := 2 / float64(N)
 	n := 0
-	for ; n <= N / 2; n++ {
+	for ; n <= N/2; n++ {
 		r[n] = coef * float64(n)
 	}
 	for ; n <= N; n++ {
-		r[n] = 2 - coef * float64(n)
+		r[n] = 2 - coef*float64(n)
 	}
 
 	return r
