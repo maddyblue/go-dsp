@@ -39,11 +39,17 @@ var windowTests = []windowTest{
 	},
 }
 
-func TestHamming(t *testing.T) {
+func TestWindowFunctions(t *testing.T) {
 	for _, v := range windowTests {
 		o := Hamming(v.in)
 		if !dsputils.PrettyClose(o, v.hamming) {
 			t.Error("hamming error\ninput:", v.in, "\noutput:", o, "\nexpected:", v.hamming)
+		}
+
+		o = Rectangular(v.in)
+		Apply(o, Hamming)
+		if !dsputils.PrettyClose(o, v.hamming) {
+			t.Error("apply error\noutput:", o, "\nexpected:", v.hamming)
 		}
 	}
 }

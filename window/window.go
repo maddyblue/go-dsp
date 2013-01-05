@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011 Matt Jibson <matt.jibson@gmail.com>
+ * Copyright (c) 2012 Matt Jibson <matt.jibson@gmail.com>
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -14,21 +14,22 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+// Package window provides window functions for digital signal processing.
 package window
 
-import (
-	"math"
-)
+// Apply applies the window windowFunction to x.
+func Apply(x []float64, windowFunction func(int) []float64) {
+	for i, w := range windowFunction(len(x)) {
+		x[i] *= w
+	}
+}
 
-// Hamming returns an L-point symmetric Hamming window.
-// Reference: http://www.mathworks.com/help/toolbox/signal/ref/hamming.html
-func Hamming(L int) []float64 {
+// Rectangular returns an L-point rectangular window (all values are 1).
+func Rectangular(L int) []float64 {
 	r := make([]float64, L)
 
-	N := L - 1
-	coef := math.Pi * 2 / float64(N)
-	for n := 0; n <= N; n++ {
-		r[n] = 0.54 - 0.46*math.Cos(coef*float64(n))
+	for i := range r {
+		r[i] = 1
 	}
 
 	return r
