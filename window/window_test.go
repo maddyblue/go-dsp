@@ -31,12 +31,17 @@ type windowTest struct {
 
 var windowTests = []windowTest{
 	windowTest{
+		1,
+		[]float64{1},
+		[]float64{1},
+		[]float64{1},
+	},
+	windowTest{
 		5,
 		[]float64{0.08, 0.54, 1, 0.54, 0.08},
 		[]float64{0, 0.5, 1, 0.5, 0},
 		[]float64{0, 0.5, 1, 0.5, 0},
 	},
-
 	windowTest{
 		10,
 		[]float64{0.08, 0.18761956, 0.46012184, 0.77, 0.97225861, 0.97225861, 0.77, 0.46012184, 0.18761956, 0.08},

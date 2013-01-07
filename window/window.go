@@ -44,10 +44,14 @@ func Rectangular(L int) []float64 {
 func Hamming(L int) []float64 {
 	r := make([]float64, L)
 
-	N := L - 1
-	coef := math.Pi * 2 / float64(N)
-	for n := 0; n <= N; n++ {
-		r[n] = 0.54 - 0.46*math.Cos(coef*float64(n))
+	if L == 1 {
+		r[0] = 1
+	} else {
+		N := L - 1
+		coef := math.Pi * 2 / float64(N)
+		for n := 0; n <= N; n++ {
+			r[n] = 0.54 - 0.46*math.Cos(coef*float64(n))
+		}
 	}
 
 	return r
@@ -58,10 +62,14 @@ func Hamming(L int) []float64 {
 func Hann(L int) []float64 {
 	r := make([]float64, L)
 
-	N := L - 1
-	coef := 2 * math.Pi / float64(N)
-	for n := 0; n <= N; n++ {
-		r[n] = 0.5 * (1 - math.Cos(coef*float64(n)))
+	if L == 1 {
+		r[0] = 1
+	} else {
+		N := L - 1
+		coef := 2 * math.Pi / float64(N)
+		for n := 0; n <= N; n++ {
+			r[n] = 0.5 * (1 - math.Cos(coef*float64(n)))
+		}
 	}
 
 	return r
@@ -72,14 +80,18 @@ func Hann(L int) []float64 {
 func Bartlett(L int) []float64 {
 	r := make([]float64, L)
 
-	N := L - 1
-	coef := 2 / float64(N)
-	n := 0
-	for ; n <= N/2; n++ {
-		r[n] = coef * float64(n)
-	}
-	for ; n <= N; n++ {
-		r[n] = 2 - coef*float64(n)
+	if L == 1 {
+		r[0] = 1
+	} else {
+		N := L - 1
+		coef := 2 / float64(N)
+		n := 0
+		for ; n <= N/2; n++ {
+			r[n] = coef * float64(n)
+		}
+		for ; n <= N; n++ {
+			r[n] = 2 - coef*float64(n)
+		}
 	}
 
 	return r
