@@ -45,9 +45,9 @@ func NextPowerOf2(x int) int {
 }
 
 // ZeroPad returns x with zeros appended to the end to the specified length.
-// If len(x) == length, x is returned.
+// If len(x) >= length, x is returned, otherwise a new array is returned.
 func ZeroPad(x []complex128, length int) []complex128 {
-	if len(x) == length {
+	if len(x) >= length {
 		return x
 	}
 
