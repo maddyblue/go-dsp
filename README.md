@@ -6,7 +6,8 @@ go-dsp is a digital signal processing package for the [Go programming language](
 
 * **[dsputils](http://godoc.org/github.com/mjibson/go-dsp/dsputils)** - utilities and data structures for DSP
 * **[fft](http://godoc.org/github.com/mjibson/go-dsp/fft)** - fast Fourier transform
-* **[window](http://godoc.org/github.com/mjibson/go-dsp/window)** - window functions
+* **[spectral](http://godoc.org/github.com/mjibson/go-dsp/spectral)** - spectral functions (e.g., Pwelch)
+* **[window](http://godoc.org/github.com/mjibson/go-dsp/window)** - window functions (e.g., Hamming)
 
 ## Installation
 
