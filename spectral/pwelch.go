@@ -128,7 +128,7 @@ func Pwelch(x []float64, Fs float64, o *PwelchOptions) (Pxx, freqs []float64) {
 	}
 
 	if enable_scaling {
-		norm *= scale
+		norm *= Fs
 	}
 
 	for i := range Pxx {
