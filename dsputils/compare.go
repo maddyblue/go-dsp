@@ -66,6 +66,20 @@ func PrettyClose2(a, b [][]complex128) bool {
 	return true
 }
 
+// PrettyClose2F returns true if the matrixes a and b are very close, else false.
+func PrettyClose2F(a, b [][]float64) bool {
+	if len(a) != len(b) {
+		return false
+	}
+
+	for i, c := range a {
+		if !PrettyClose(c, b[i]) {
+			return false
+		}
+	}
+	return true
+}
+
 // ComplexEqual returns true if a and b are very close, else false.
 func ComplexEqual(a, b complex128) bool {
 	r_a := real(a)

@@ -56,6 +56,18 @@ func ZeroPad(x []complex128, length int) []complex128 {
 	return r
 }
 
+// ZeroPadF returns x with zeros appended to the end to the specified length.
+// If len(x) >= length, x is returned, otherwise a new array is returned.
+func ZeroPadF(x []float64, length int) []float64 {
+	if len(x) >= length {
+		return x
+	}
+
+	r := make([]float64, length)
+	copy(r, x)
+	return r
+}
+
 // ZeroPad2 returns ZeroPad of x, with the length as the next power of 2 >= len(x).
 func ZeroPad2(x []complex128) []complex128 {
 	return ZeroPad(x, NextPowerOf2(len(x)))
