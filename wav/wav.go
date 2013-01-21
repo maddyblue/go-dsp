@@ -14,6 +14,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+// Package wav provides support for the WAV file format.
 package wav
 
 import (
@@ -33,6 +34,7 @@ type Wav struct {
 	Data          []byte
 }
 
+// ReadWav reads a wav file.
 func ReadWav(r io.Reader) (*Wav, error) {
 	b, err := ioutil.ReadAll(r)
 	if err != nil {
