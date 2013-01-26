@@ -50,7 +50,7 @@ func ReadWav(r io.Reader) (*Wav, error) {
 	if len(b) < 44 ||
 		string(b[0:4]) != "RIFF" ||
 		string(b[8:12]) != "WAVE" ||
-		bLEtoUint32(b, 4) != uint32(len(b)) ||
+		//bLEtoUint32(b, 4) != uint32(len(b)) || // does not appear to be consistent
 		string(b[12:16]) != "fmt " ||
 		string(b[36:40]) != "data" ||
 		bLEtoUint32(b, 40) != uint32(len(b)-44) {
