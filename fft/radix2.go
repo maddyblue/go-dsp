@@ -87,7 +87,7 @@ func radix2FFT(x []complex128) []complex128 {
 	var blocks, stage, s_2 int
 
 	jobs := make(chan *fft_work, lx)
-	results := make(chan bool, lx)
+	wg := sync.WaitGroup{}
 
 	num_workers := worker_pool_size
 	if (num_workers) == 0 {
@@ -119,8 +119,7 @@ func radix2FFT(x []complex128) []complex128 {
 					t[n1] = rn - rn1
 				}
 			}
-
-			results <- true
+			wg.Done()
 		}
 	}
 
@@ -132,11 +131,10 @@ func radix2FFT(x []complex128) []complex128 {
 	for stage = 2; stage <= lx; stage <<= 1 {
 		blocks = lx / stage
 		s_2 = stage / 2
-		workers_spawned := 0
 
 		for start, end := 0, stage; ; {
 			if end-start >= idx_diff || end == lx {
-				workers_spawned++
+				wg.Add(1)
 				jobs <- &fft_work{start, end}
 
 				if end == lx {
@@ -148,11 +146,7 @@ func radix2FFT(x []complex128) []complex128 {
 
 			end += stage
 		}
-
-		for n := 0; n < workers_spawned; n++ {
-			<-results
-		}
-
+		wg.Wait()
 		r, t = t, r
 	}
 
