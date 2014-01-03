@@ -25,4 +25,4 @@ func main() {
 }
 ```
 
-[![Analytics](https://ga-beacon.appspot.com/UA-46765694-1/go-dsp?pixel)](https://github.com/mjibson/goread)
+![Analytics](https://ga-beacon.appspot.com/UA-46765694-1/go-dsp?pixel)
