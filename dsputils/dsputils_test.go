@@ -27,7 +27,7 @@ type segmentTest struct {
 }
 
 var segmentTests = []segmentTest{
-	segmentTest{
+	{
 		3,
 		.5,
 		[][]int{

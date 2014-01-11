@@ -29,28 +29,28 @@ type segmentTest struct {
 }
 
 var segmentTests = []segmentTest{
-	segmentTest{
+	{
 		4, 0,
 		[][]float64{
-			[]float64{1, 2, 3, 4},
-			[]float64{5, 6, 7, 8},
+			{1, 2, 3, 4},
+			{5, 6, 7, 8},
 		},
 	},
-	segmentTest{
+	{
 		4, 1,
 		[][]float64{
-			[]float64{1, 2, 3, 4},
-			[]float64{4, 5, 6, 7},
-			[]float64{7, 8, 9, 10},
+			{1, 2, 3, 4},
+			{4, 5, 6, 7},
+			{7, 8, 9, 10},
 		},
 	},
-	segmentTest{
+	{
 		4, 2,
 		[][]float64{
-			[]float64{1, 2, 3, 4},
-			[]float64{3, 4, 5, 6},
-			[]float64{5, 6, 7, 8},
-			[]float64{7, 8, 9, 10},
+			{1, 2, 3, 4},
+			{3, 4, 5, 6},
+			{5, 6, 7, 8},
+			{7, 8, 9, 10},
 		},
 	},
 }

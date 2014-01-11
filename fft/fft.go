@@ -45,7 +45,7 @@ func IFFT(x []complex128) []complex128 {
 	r = FFT(r)
 
 	N := complex(float64(lx), 0)
-	for n, _ := range r {
+	for n := range r {
 		r[n] /= N
 	}
 	return r

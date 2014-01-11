@@ -35,19 +35,19 @@ type fftTest struct {
 
 var fftTests = []fftTest{
 	// impulse responses
-	fftTest{
+	{
 		[]float64{1},
 		[]complex128{complex(1, 0)},
 	},
-	fftTest{
+	{
 		[]float64{1, 0},
 		[]complex128{complex(1, 0), complex(1, 0)},
 	},
-	fftTest{
+	{
 		[]float64{1, 0, 0, 0},
 		[]complex128{complex(1, 0), complex(1, 0), complex(1, 0), complex(1, 0)},
 	},
-	fftTest{
+	{
 		[]float64{1, 0, 0, 0, 0, 0, 0, 0},
 		[]complex128{
 			complex(1, 0),
@@ -61,15 +61,15 @@ var fftTests = []fftTest{
 	},
 
 	// shifted impulse response
-	fftTest{
+	{
 		[]float64{0, 1},
 		[]complex128{complex(1, 0), complex(-1, 0)},
 	},
-	fftTest{
+	{
 		[]float64{0, 1, 0, 0},
 		[]complex128{complex(1, 0), complex(0, -1), complex(-1, 0), complex(0, 1)},
 	},
-	fftTest{
+	{
 		[]float64{0, 1, 0, 0, 0, 0, 0, 0},
 		[]complex128{
 			complex(1, 0),
@@ -83,7 +83,7 @@ var fftTests = []fftTest{
 	},
 
 	// other
-	fftTest{
+	{
 		[]float64{1, 2, 3, 4},
 		[]complex128{
 			complex(10, 0),
@@ -91,7 +91,7 @@ var fftTests = []fftTest{
 			complex(-2, 0),
 			complex(-2, -2)},
 	},
-	fftTest{
+	{
 		[]float64{1, 3, 5, 7},
 		[]complex128{
 			complex(16, 0),
@@ -99,7 +99,7 @@ var fftTests = []fftTest{
 			complex(-4, 0),
 			complex(-4, -4)},
 	},
-	fftTest{
+	{
 		[]float64{1, 2, 3, 4, 5, 6, 7, 8},
 		[]complex128{
 			complex(36, 0),
@@ -113,7 +113,7 @@ var fftTests = []fftTest{
 	},
 
 	// non power of 2 lengths
-	fftTest{
+	{
 		[]float64{1, 0, 0, 0, 0},
 		[]complex128{
 			complex(1, 0),
@@ -122,14 +122,14 @@ var fftTests = []fftTest{
 			complex(1, 0),
 			complex(1, 0)},
 	},
-	fftTest{
+	{
 		[]float64{1, 2, 3},
 		[]complex128{
 			complex(6, 0),
 			complex(-1.5, 0.8660254),
 			complex(-1.5, -0.8660254)},
 	},
-	fftTest{
+	{
 		[]float64{1, 1, 1},
 		[]complex128{
 			complex(3, 0),
@@ -144,13 +144,13 @@ type fft2Test struct {
 }
 
 var fft2Tests = []fft2Test{
-	fft2Test{
+	{
 		[][]float64{{1, 2, 3}, {3, 4, 5}},
 		[][]complex128{
 			{complex(18, 0), complex(-3, 1.73205081), complex(-3, -1.73205081)},
 			{complex(-6, 0), complex(0, 0), complex(0, 0)}},
 	},
-	fft2Test{
+	{
 		[][]float64{{0.1, 0.2, 0.3, 0.4, 0.5}, {1, 2, 3, 4, 5}, {3, 2, 1, 0, -1}},
 		[][]complex128{
 			{complex(21.5, 0), complex(-0.25, 0.34409548), complex(-0.25, 0.08122992), complex(-0.25, -0.08122992), complex(-0.25, -0.34409548)},
@@ -166,7 +166,7 @@ type fftnTest struct {
 }
 
 var fftnTests = []fftnTest{
-	fftnTest{
+	{
 		[]float64{4, 2, 3, 8, 5, 6, 7, 2, 13, 24, 13, 17},
 		[]int{2, 2, 3},
 		[]complex128{
@@ -185,11 +185,11 @@ type reverseBitsTest struct {
 }
 
 var reverseBitsTests = []reverseBitsTest{
-	reverseBitsTest{0, 1, 0},
-	reverseBitsTest{1, 2, 2},
-	reverseBitsTest{1, 4, 8},
-	reverseBitsTest{2, 4, 4},
-	reverseBitsTest{3, 4, 12},
+	{0, 1, 0},
+	{1, 2, 2},
+	{1, 4, 8},
+	{2, 4, 4},
+	{3, 4, 12},
 }
 
 func TestFFT(t *testing.T) {
