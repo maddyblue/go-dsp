@@ -94,7 +94,7 @@ func ReadWav(r io.Reader) (*Wav, error) {
 
 		for i := 0; i < int(w.ChunkSize)/int(w.BlockAlign); i++ {
 			for ch := 0; ch < int(w.NumChannels); ch++ {
-				w.Data16[ch][i] = bLEtoInt16(data, i*int(w.NumChannels)+ch)
+				w.Data16[ch][i] = bLEtoInt16(data, 2*i*int(w.NumChannels)+ch)
 				w.Data[ch][i] = int(w.Data16[ch][i])
 			}
 		}
