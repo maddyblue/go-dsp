@@ -23,7 +23,23 @@ import (
 	"io/ioutil"
 )
 
-type Wav struct {
+const (
+	RIFFMarkerOffset = 0
+	WAVEMarkerOffset = 8
+	FMTMarkerOffset  = 12
+	DataMarkerOffset = 36
+
+	AudioFormatOffset   = 20
+	NumChannelsOffset   = 22
+	SampleRateOffset    = 24
+	ByteRateOffset      = 28
+	BlockAlignOffset    = 32
+	BitsPerSampleOffset = 34
+	ChunkSizeOffset     = 40
+	ExpectedHeaderSize  = 44
+)
+
+type WavHeader struct {
 	AudioFormat   uint16
 	NumChannels   uint16
 	SampleRate    uint32
@@ -32,6 +48,10 @@ type Wav struct {
 	BitsPerSample uint16
 	ChunkSize     uint32
 	NumSamples    int
+}
+
+type Wav struct {
+	WavHeader
 
 	// The Data corresponding to BitsPerSample is populated, indexed by channel.
 	Data8  [][]uint8
@@ -41,66 +61,113 @@ type Wav struct {
 	Data [][]int
 }
 
+func checkHeader(header []byte) error {
+	if len(header) < ExpectedHeaderSize {
+		return errors.New("wav: Invalid header size")
+	}
+	if string(header[0:4]) != "RIFF" {
+		return errors.New("wav: Header does not conatin 'RIFF'")
+	}
+	if string(header[8:12]) != "WAVE" {
+		return errors.New("wav: Header does not contain 'WAVE'")
+	}
+	if string(header[12:16]) != "fmt " {
+		return errors.New("wav: Header does not contain 'fmt'")
+	}
+	if string(header[36:40]) != "data" {
+		return errors.New("wav: Header does not contain 'data'")
+	}
+
+	return nil
+}
+
+func (wavHeader *WavHeader) setupWithHeaderData(header []byte) (err error) {
+	if err = checkHeader(header); err != nil {
+		return
+	}
+
+	wavHeader.AudioFormat = bLEtoUint16(header, AudioFormatOffset)
+	wavHeader.NumChannels = bLEtoUint16(header, NumChannelsOffset)
+	wavHeader.SampleRate = bLEtoUint32(header, SampleRateOffset)
+	wavHeader.ByteRate = bLEtoUint32(header, ByteRateOffset)
+	wavHeader.BlockAlign = bLEtoUint16(header, BlockAlignOffset)
+	wavHeader.BitsPerSample = bLEtoUint16(header, BitsPerSampleOffset)
+	wavHeader.ChunkSize = bLEtoUint32(header, ChunkSizeOffset)
+	wavHeader.NumSamples = int(wavHeader.ChunkSize) / int(wavHeader.BlockAlign)
+
+	return
+}
+
+// Returns a single sample laid out by channel e.g. [ch0, ch1, ...]
+func readSampleFromData(data []byte, sampleIndex int, header WavHeader) (sample []int) {
+	sample = make([]int, header.NumChannels)
+
+	for channelIdx := 0; channelIdx < int(header.NumChannels); channelIdx++ {
+		if header.BitsPerSample == 8 {
+			sample[channelIdx] = int(data[sampleIndex*int(header.NumChannels)+channelIdx])
+		} else if header.BitsPerSample == 16 {
+			sample[channelIdx] = int(bLEtoInt16(data, 2*sampleIndex*int(header.NumChannels)+channelIdx))
+		}
+	}
+
+	return
+}
+
 // ReadWav reads a wav file.
-func ReadWav(r io.Reader) (*Wav, error) {
-	b, err := ioutil.ReadAll(r)
+func ReadWav(r io.Reader) (wav *Wav, err error) {
+	if r == nil {
+		return nil, errors.New("wav: Invalid Reader")
+	}
+
+	bytes, err := ioutil.ReadAll(r)
 	if err != nil {
 		return nil, err
 	}
-	if len(b) < 44 ||
-		string(b[0:4]) != "RIFF" ||
-		string(b[8:12]) != "WAVE" ||
-		//bLEtoUint32(b, 4) != uint32(len(b)) || // does not appear to be consistent
-		string(b[12:16]) != "fmt " ||
-		string(b[36:40]) != "data" ||
-		bLEtoUint32(b, 40) != uint32(len(b)-44) {
-		return nil, errors.New("wav: not a WAV")
+
+	wav = new(Wav)
+	err = wav.WavHeader.setupWithHeaderData(bytes)
+	if err != nil {
+		return nil, err
 	}
 
-	w := Wav{
-		AudioFormat:   bLEtoUint16(b, 20),
-		NumChannels:   bLEtoUint16(b, 22),
-		SampleRate:    bLEtoUint32(b, 24),
-		ByteRate:      bLEtoUint32(b, 28),
-		BlockAlign:    bLEtoUint16(b, 32),
-		BitsPerSample: bLEtoUint16(b, 34),
-		ChunkSize:     bLEtoUint32(b, 40),
+	data := bytes[ExpectedHeaderSize : int(wav.ChunkSize)+ExpectedHeaderSize]
+
+	wav.Data = make([][]int, wav.NumChannels)
+	for ch := 0; ch < int(wav.NumChannels); ch++ {
+		wav.Data[ch] = make([]int, wav.NumSamples)
 	}
-	w.NumSamples = int(w.ChunkSize) / int(w.BlockAlign)
 
-	data := b[44 : w.ChunkSize+44]
-
-	w.Data = make([][]int, w.NumChannels)
-
-	if w.BitsPerSample == 8 {
-		w.Data8 = make([][]uint8, w.NumChannels)
-		for ch := 0; ch < int(w.NumChannels); ch++ {
-			w.Data8[ch] = make([]uint8, w.NumSamples)
-			w.Data[ch] = make([]int, w.NumSamples)
+	if wav.BitsPerSample == 8 {
+		wav.Data8 = make([][]uint8, wav.NumChannels)
+		for ch := 0; ch < int(wav.NumChannels); ch++ {
+			wav.Data8[ch] = make([]uint8, wav.NumSamples)
 		}
 
-		for i := 0; i < int(w.ChunkSize); i++ {
-			for ch := 0; ch < int(w.NumChannels); ch++ {
-				w.Data8[ch][i] = uint8(data[i*int(w.NumChannels)+ch])
-				w.Data[ch][i] = int(w.Data8[ch][i])
+		for i := 0; i < wav.NumSamples; i++ {
+			sample := readSampleFromData(data, i, wav.WavHeader)
+
+			for ch := 0; ch < int(wav.NumChannels); ch++ {
+				wav.Data8[ch][i] = uint8(sample[ch])
+				wav.Data[ch][i] = sample[ch]
 			}
 		}
-	} else if w.BitsPerSample == 16 {
-		w.Data16 = make([][]int16, w.NumChannels)
-		for ch := 0; ch < int(w.NumChannels); ch++ {
-			w.Data16[ch] = make([]int16, w.NumSamples)
-			w.Data[ch] = make([]int, w.NumSamples)
+	} else if wav.BitsPerSample == 16 {
+		wav.Data16 = make([][]int16, wav.NumChannels)
+		for ch := 0; ch < int(wav.NumChannels); ch++ {
+			wav.Data16[ch] = make([]int16, wav.NumSamples)
 		}
 
-		for i := 0; i < int(w.ChunkSize)/int(w.BlockAlign); i++ {
-			for ch := 0; ch < int(w.NumChannels); ch++ {
-				w.Data16[ch][i] = bLEtoInt16(data, 2*i*int(w.NumChannels)+ch)
-				w.Data[ch][i] = int(w.Data16[ch][i])
+		for i := 0; i < wav.NumSamples; i++ {
+			sample := readSampleFromData(data, i, wav.WavHeader)
+
+			for ch := 0; ch < int(wav.NumChannels); ch++ {
+				wav.Data16[ch][i] = int16(sample[ch])
+				wav.Data[ch][i] = sample[ch]
 			}
 		}
 	}
 
-	return &w, nil
+	return
 }
 
 // little-endian [4]byte to uint32 conversion
