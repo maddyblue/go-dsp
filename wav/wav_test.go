@@ -1,6 +1,7 @@
 package wav
 
 import (
+	"math"
 	"os"
 	"testing"
 )
@@ -207,5 +208,66 @@ func TestReadWavFromFile(t *testing.T) {
 		if len(wav.Data[ch]) != int(wav.NumSamples) {
 			t.Fatalf("wav.Data[%d] has incorrect length. Expected %d. Got %d", ch, wav.NumSamples, len(wav.Data[ch]))
 		}
+	}
+}
+
+func TestStreamWav(t *testing.T) {
+	wav, err := StreamWav(nil)
+	if wav != nil {
+		t.Fatal("Streaming from a nil reader should return a nil wav interface")
+	}
+	if err == nil {
+		t.Fatal("Streaming from a nil reader should return an error")
+	}
+
+	testFilePath := SmallWavFileName
+	testFile, err := os.Open(testFilePath)
+	if err != nil {
+		t.Fatalf("Unable to run test, can't open test file '%s'", testFilePath)
+	}
+	defer testFile.Close()
+
+	wav, err = StreamWav(testFile)
+	if wav == nil {
+		t.Fatal("Streaming from a valid reader returned a nil wav interface")
+	}
+	if err != nil {
+		t.Fatalf("Streaming from a valid reader returned an error", err.Error())
+	}
+
+	performTestOfHeaderInitialization(t, wav.WavHeader, expectedHeaderDataForTestFile(testFilePath))
+
+	numberOfSamplesToRead := 1008
+	samplesRemaining := wav.NumSamples
+	expectedNumberOfSamples := numberOfSamplesToRead
+	samples, err := wav.ReadSamples(numberOfSamplesToRead)
+	for len(samples) > 0 {
+		if err != nil {
+			t.Fatalf("ReadSamples returned an unexpected error: %s", err.Error())
+		}
+
+		if samples == nil {
+			t.Fatal("ReadSamples returned nil")
+		}
+
+		if uint16(len(samples)) != wav.NumChannels {
+			t.Fatalf("Number of channels is not as expected. Expected %d. Got %d", wav.NumChannels, len(samples))
+		}
+		for channel := 0; channel < int(wav.NumChannels); channel++ {
+			if len(samples[channel]) != expectedNumberOfSamples {
+				t.Fatalf("Number of samples not as expected. Expected %d. Got %d", expectedNumberOfSamples, len(samples[channel]))
+			}
+		}
+		samplesRemaining -= len(samples[0])
+		expectedNumberOfSamples = int(math.Min(float64(samplesRemaining), float64(numberOfSamplesToRead)))
+		samples, err = wav.ReadSamples(numberOfSamplesToRead)
+	}
+
+	samples, err = wav.ReadSamples(1)
+	if err == nil {
+		t.Fatal("Expected error when reading past end of reader")
+	}
+	if len(samples) != 0 {
+		t.Fatal("Expected zero samples returned when reading past end of reader")
 	}
 }

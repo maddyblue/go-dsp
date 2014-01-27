@@ -61,6 +61,11 @@ type Wav struct {
 	Data [][]int
 }
 
+type StreamedWav struct {
+	WavHeader
+	io.Reader
+}
+
 func checkHeader(header []byte) error {
 	if len(header) < ExpectedHeaderSize {
 		return errors.New("wav: Invalid header size")
@@ -164,6 +169,58 @@ func ReadWav(r io.Reader) (wav *Wav, err error) {
 				wav.Data16[ch][i] = int16(sample[ch])
 				wav.Data[ch][i] = sample[ch]
 			}
+		}
+	}
+
+	return
+}
+
+// Constructs a StreamedWav which can be read using ReadSamples
+func StreamWav(reader io.Reader) (wav *StreamedWav, err error) {
+	if reader == nil {
+		return nil, errors.New("wav: Invalid Reader")
+	}
+
+	header := make([]byte, ExpectedHeaderSize)
+	_, err = reader.Read(header)
+	if err != nil {
+		return nil, err
+	}
+
+	wav = new(StreamedWav)
+	err = wav.setupWithHeaderData(header)
+	if err != nil {
+		return nil, err
+	}
+
+	wav.Reader = reader
+
+	return
+}
+
+// Returns an array of [channelIndex][sampleIndex]
+// The number of samples returned may be less than the amount requested
+// depending on the amount of data available.
+func (wav *StreamedWav) ReadSamples(numSamples int) (samples [][]int, err error) {
+	data := make([]byte, numSamples*int(wav.BlockAlign))
+	amountRead, err := wav.Reader.Read(data)
+	if err != nil {
+		return
+	}
+	if amountRead%int(wav.BlockAlign) != 0 {
+		err = errors.New("wav: Read an invalid amount of data")
+		return
+	}
+
+	numberOfSamplesRead := amountRead / int(wav.BlockAlign)
+	samples = make([][]int, wav.NumChannels)
+	for ch := 0; ch < int(wav.NumChannels); ch++ {
+		samples[ch] = make([]int, numberOfSamplesRead)
+	}
+	for sampleIndex := 0; sampleIndex < numberOfSamplesRead; sampleIndex++ {
+		sample := readSampleFromData(data, sampleIndex, wav.WavHeader)
+		for ch := 0; ch < int(wav.NumChannels); ch++ {
+			samples[ch][sampleIndex] = sample[ch]
 		}
 	}
 
