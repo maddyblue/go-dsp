@@ -53,11 +53,11 @@ type WavHeader struct {
 type Wav struct {
 	WavHeader
 
-	// The Data corresponding to BitsPerSample is populated, indexed by channel.
+	// The Data corresponding to BitsPerSample is populated, indexed by sample.
 	Data8  [][]uint8
 	Data16 [][]int16
 
-	// Data is always populated, indexed by channel. It is a copy of DataXX.
+	// Data is always populated, indexed by sample. It is a copy of DataXX.
 	Data [][]int
 }
 
@@ -137,37 +137,34 @@ func ReadWav(r io.Reader) (wav *Wav, err error) {
 
 	data := bytes[ExpectedHeaderSize : int(wav.ChunkSize)+ExpectedHeaderSize]
 
-	wav.Data = make([][]int, wav.NumChannels)
-	for ch := 0; ch < int(wav.NumChannels); ch++ {
-		wav.Data[ch] = make([]int, wav.NumSamples)
-	}
+	wav.Data = make([][]int, wav.NumSamples)
 
 	if wav.BitsPerSample == 8 {
-		wav.Data8 = make([][]uint8, wav.NumChannels)
-		for ch := 0; ch < int(wav.NumChannels); ch++ {
-			wav.Data8[ch] = make([]uint8, wav.NumSamples)
+		wav.Data8 = make([][]uint8, wav.NumSamples)
+		for sampleIndex := 0; sampleIndex < wav.NumSamples; sampleIndex++ {
+			wav.Data8[sampleIndex] = make([]uint8, wav.NumChannels)
 		}
 
 		for i := 0; i < wav.NumSamples; i++ {
 			sample := readSampleFromData(data, i, wav.WavHeader)
+			wav.Data[i] = sample
 
 			for ch := 0; ch < int(wav.NumChannels); ch++ {
-				wav.Data8[ch][i] = uint8(sample[ch])
-				wav.Data[ch][i] = sample[ch]
+				wav.Data8[i][ch] = uint8(sample[ch])
 			}
 		}
 	} else if wav.BitsPerSample == 16 {
-		wav.Data16 = make([][]int16, wav.NumChannels)
-		for ch := 0; ch < int(wav.NumChannels); ch++ {
-			wav.Data16[ch] = make([]int16, wav.NumSamples)
+		wav.Data16 = make([][]int16, wav.NumSamples)
+		for sampleIndex := 0; sampleIndex < wav.NumSamples; sampleIndex++ {
+			wav.Data16[sampleIndex] = make([]int16, wav.NumChannels)
 		}
 
 		for i := 0; i < wav.NumSamples; i++ {
 			sample := readSampleFromData(data, i, wav.WavHeader)
+			wav.Data[i] = sample
 
 			for ch := 0; ch < int(wav.NumChannels); ch++ {
-				wav.Data16[ch][i] = int16(sample[ch])
-				wav.Data[ch][i] = sample[ch]
+				wav.Data16[i][ch] = int16(sample[ch])
 			}
 		}
 	}
@@ -213,15 +210,10 @@ func (wav *StreamedWav) ReadSamples(numSamples int) (samples [][]int, err error)
 	}
 
 	numberOfSamplesRead := amountRead / int(wav.BlockAlign)
-	samples = make([][]int, wav.NumChannels)
-	for ch := 0; ch < int(wav.NumChannels); ch++ {
-		samples[ch] = make([]int, numberOfSamplesRead)
-	}
+	samples = make([][]int, numberOfSamplesRead)
+
 	for sampleIndex := 0; sampleIndex < numberOfSamplesRead; sampleIndex++ {
-		sample := readSampleFromData(data, sampleIndex, wav.WavHeader)
-		for ch := 0; ch < int(wav.NumChannels); ch++ {
-			samples[ch][sampleIndex] = sample[ch]
-		}
+		samples[sampleIndex] = readSampleFromData(data, sampleIndex, wav.WavHeader)
 	}
 
 	return

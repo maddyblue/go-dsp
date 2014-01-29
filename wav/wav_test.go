@@ -193,20 +193,20 @@ func TestReadWavFromFile(t *testing.T) {
 	if len(wav.Data8) != 0 {
 		t.Fatalf("Expected wav.Data8 to be empty, but has length %d", len(wav.Data8))
 	}
-	if len(wav.Data16) != int(wav.NumChannels) {
-		t.Fatalf("wav.Data16 has incorrect length. Expected %d. Got %d", wav.NumChannels, len(wav.Data16))
+	if len(wav.Data16) != wav.NumSamples {
+		t.Fatalf("wav.Data16 has incorrect length. Expected %d. Got %d", wav.NumSamples, len(wav.Data16))
 	}
-	for ch := 0; ch < int(wav.NumChannels); ch++ {
-		if len(wav.Data16[ch]) != wav.NumSamples {
-			t.Fatalf("wav.Data16[%d] has incorrect length. Expected %d. Got %d", ch, wav.NumSamples, len(wav.Data16[ch]))
+	for sampleIndex := 0; sampleIndex < wav.NumSamples; sampleIndex++ {
+		if len(wav.Data16[sampleIndex]) != int(wav.NumChannels) {
+			t.Fatalf("wav.Data16[%d] has incorrect length. Expected %d. Got %d", sampleIndex, wav.NumChannels, len(wav.Data16[sampleIndex]))
 		}
 	}
-	if len(wav.Data) != int(wav.NumChannels) {
+	if len(wav.Data) != wav.NumSamples {
 		t.Fatalf("wav.Data has incorrect length. Expected %d. Got %d", wav.NumChannels, len(wav.Data))
 	}
-	for ch := 0; ch < int(wav.NumChannels); ch++ {
-		if len(wav.Data[ch]) != int(wav.NumSamples) {
-			t.Fatalf("wav.Data[%d] has incorrect length. Expected %d. Got %d", ch, wav.NumSamples, len(wav.Data[ch]))
+	for sampleIndex := 0; sampleIndex < wav.NumSamples; sampleIndex++ {
+		if len(wav.Data[sampleIndex]) != int(wav.NumChannels) {
+			t.Fatalf("wav.Data[%d] has incorrect length. Expected %d. Got %d", sampleIndex, wav.NumChannels, len(wav.Data[sampleIndex]))
 		}
 	}
 }
@@ -250,15 +250,15 @@ func TestStreamWav(t *testing.T) {
 			t.Fatal("ReadSamples returned nil")
 		}
 
-		if uint16(len(samples)) != wav.NumChannels {
-			t.Fatalf("Number of channels is not as expected. Expected %d. Got %d", wav.NumChannels, len(samples))
+		if len(samples) != expectedNumberOfSamples {
+			t.Fatalf("Number of samples is not as expected. Expected %d. Got %d. %d remaining", expectedNumberOfSamples, len(samples), samplesRemaining)
 		}
-		for channel := 0; channel < int(wav.NumChannels); channel++ {
-			if len(samples[channel]) != expectedNumberOfSamples {
-				t.Fatalf("Number of samples not as expected. Expected %d. Got %d", expectedNumberOfSamples, len(samples[channel]))
+		for sampleIndex := 0; sampleIndex < len(samples); sampleIndex++ {
+			if len(samples[sampleIndex]) != int(wav.NumChannels) {
+				t.Fatalf("Number of channels not as expected. Expected %d. Got %d", wav.NumChannels, len(samples[sampleIndex]))
 			}
 		}
-		samplesRemaining -= len(samples[0])
+		samplesRemaining -= len(samples)
 		expectedNumberOfSamples = int(math.Min(float64(samplesRemaining), float64(numberOfSamplesToRead)))
 		samples, err = wav.ReadSamples(numberOfSamplesToRead)
 	}
