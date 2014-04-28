@@ -86,7 +86,7 @@ func checkHeader(header []byte) error {
 	return nil
 }
 
-func (wavHeader *WavHeader) setupWithHeaderData(header []byte) (err error) {
+func (wavHeader *WavHeader) setup(header []byte) (err error) {
 	if err = checkHeader(header); err != nil {
 		return
 	}
@@ -104,7 +104,7 @@ func (wavHeader *WavHeader) setupWithHeaderData(header []byte) (err error) {
 }
 
 // Returns a single sample laid out by channel e.g. [ch0, ch1, ...]
-func readSampleFromData(data []byte, sampleIndex int, header WavHeader) (sample []int) {
+func readSample(data []byte, sampleIndex int, header WavHeader) (sample []int) {
 	sample = make([]int, header.NumChannels)
 
 	for channelIdx := 0; channelIdx < int(header.NumChannels); channelIdx++ {
@@ -130,7 +130,7 @@ func ReadWav(r io.Reader) (wav *Wav, err error) {
 	}
 
 	wav = new(Wav)
-	err = wav.WavHeader.setupWithHeaderData(bytes)
+	err = wav.WavHeader.setup(bytes)
 	if err != nil {
 		return nil, err
 	}
@@ -146,7 +146,7 @@ func ReadWav(r io.Reader) (wav *Wav, err error) {
 		}
 
 		for i := 0; i < wav.NumSamples; i++ {
-			sample := readSampleFromData(data, i, wav.WavHeader)
+			sample := readSample(data, i, wav.WavHeader)
 			wav.Data[i] = sample
 
 			for ch := 0; ch < int(wav.NumChannels); ch++ {
@@ -160,7 +160,7 @@ func ReadWav(r io.Reader) (wav *Wav, err error) {
 		}
 
 		for i := 0; i < wav.NumSamples; i++ {
-			sample := readSampleFromData(data, i, wav.WavHeader)
+			sample := readSample(data, i, wav.WavHeader)
 			wav.Data[i] = sample
 
 			for ch := 0; ch < int(wav.NumChannels); ch++ {
@@ -172,7 +172,7 @@ func ReadWav(r io.Reader) (wav *Wav, err error) {
 	return
 }
 
-// Constructs a StreamedWav which can be read using ReadSamples
+// StreamedWav returns a wav for streamed reading.
 func StreamWav(reader io.Reader) (wav *StreamedWav, err error) {
 	if reader == nil {
 		return nil, errors.New("wav: Invalid Reader")
@@ -185,7 +185,7 @@ func StreamWav(reader io.Reader) (wav *StreamedWav, err error) {
 	}
 
 	wav = new(StreamedWav)
-	err = wav.setupWithHeaderData(header)
+	err = wav.setup(header)
 	if err != nil {
 		return nil, err
 	}
@@ -195,9 +195,9 @@ func StreamWav(reader io.Reader) (wav *StreamedWav, err error) {
 	return
 }
 
-// Returns an array of [channelIndex][sampleIndex]
-// The number of samples returned may be less than the amount requested
-// depending on the amount of data available.
+// ReadSamples returns an array of [channelIndex][sampleIndex] samples. The
+// number of samples returned may be less than the amount requested depending
+// on the amount of data available.
 func (wav *StreamedWav) ReadSamples(numSamples int) (samples [][]int, err error) {
 	data := make([]byte, numSamples*int(wav.BlockAlign))
 	amountRead, err := wav.Reader.Read(data)
@@ -213,7 +213,7 @@ func (wav *StreamedWav) ReadSamples(numSamples int) (samples [][]int, err error)
 	samples = make([][]int, numberOfSamplesRead)
 
 	for sampleIndex := 0; sampleIndex < numberOfSamplesRead; sampleIndex++ {
-		samples[sampleIndex] = readSampleFromData(data, sampleIndex, wav.WavHeader)
+		samples[sampleIndex] = readSample(data, sampleIndex, wav.WavHeader)
 	}
 
 	return

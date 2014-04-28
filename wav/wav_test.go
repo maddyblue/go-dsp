@@ -150,12 +150,12 @@ func TestHeaderInitialization(t *testing.T) {
 		t.Fatal("Unable to create new Wav")
 	}
 
-	err = wav.WavHeader.setupWithHeaderData(nil)
+	err = wav.WavHeader.setup(nil)
 	if err == nil {
 		t.Fatal("Expected error when setting up wav with nil header")
 	}
 
-	err = wav.WavHeader.setupWithHeaderData(header)
+	err = wav.WavHeader.setup(header)
 	if err != nil {
 		t.Fatalf("Got error when initializing wav with valid header: '%s'", err.Error())
 	}
