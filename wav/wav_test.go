@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	SmallWavFileName = "test_files/small.wav"
+	smallWav = "small.wav"
 )
 
 func readHeaderData(filePath string) (header []byte, amountRead int, err error) {
@@ -24,7 +24,7 @@ func readHeaderData(filePath string) (header []byte, amountRead int, err error) 
 }
 
 func TestCorrectHeaderValidation(t *testing.T) {
-	header, amountRead, err := readHeaderData(SmallWavFileName)
+	header, amountRead, err := readHeaderData(smallWav)
 	if header == nil {
 		t.Fatal("Header data should not be nil")
 	}
@@ -75,68 +75,63 @@ func TestInvalidHeaderValidation(t *testing.T) {
 	validateErrorForMissingHeaderValue(err, "data")
 }
 
-func expectedHeaderDataForTestFile(filePath string) map[string]int {
-	switch filePath {
-	case SmallWavFileName:
-		return map[string]int{
-			"AudioFormat":   1,
-			"NumChannels":   1,
-			"SampleRate":    44100,
-			"ByteRate":      88200,
-			"BlockAlign":    2,
-			"BitsPerSample": 16,
-			"ChunkSize":     83790,
-			"NumSamples":    83790 / 2,
-		}
-	}
-
-	return map[string]int{}
+var headers = map[string]map[string]int{
+	smallWav: {
+		"AudioFormat":   1,
+		"NumChannels":   1,
+		"SampleRate":    44100,
+		"ByteRate":      88200,
+		"BlockAlign":    2,
+		"BitsPerSample": 16,
+		"ChunkSize":     83790,
+		"NumSamples":    83790 / 2,
+	},
 }
 
-func performTestOfHeaderInitialization(t *testing.T, header WavHeader, expectedValues map[string]int) {
+func testHeader(t *testing.T, header WavHeader, expectedValues map[string]int) {
 	expectedAudioFormat := uint16(expectedValues["AudioFormat"])
 	if header.AudioFormat != expectedAudioFormat {
-		t.Logf("Audio format does not match. Expected: '%s'. Got: '%s'", expectedAudioFormat, header.AudioFormat)
+		t.Logf("Audio format does not match. Expected: '%v'. Got: '%v'", expectedAudioFormat, header.AudioFormat)
 	}
 
 	expectedNumChannels := uint16(expectedValues["NumChannels"])
 	if header.NumChannels != expectedNumChannels {
-		t.Logf("Number of channles does not match. Expected: '%s'. Got: '%s'", expectedNumChannels, header.NumChannels)
+		t.Logf("Number of channles does not match. Expected: '%v'. Got: '%v'", expectedNumChannels, header.NumChannels)
 	}
 
 	expectedSampleRate := uint32(expectedValues["SampleRate"])
 	if header.SampleRate != expectedSampleRate {
-		t.Logf("Sample rate does not match. Expected: '%s'. Got: '%s'", expectedSampleRate, header.SampleRate)
+		t.Logf("Sample rate does not match. Expected: '%v'. Got: '%v'", expectedSampleRate, header.SampleRate)
 	}
 
 	expectedByteRate := uint32(expectedValues["ByteRate"])
 	if header.ByteRate != expectedByteRate {
-		t.Logf("Byte rate does not match. Expected: '%s'. Got: '%s'", expectedByteRate, header.ByteRate)
+		t.Logf("Byte rate does not match. Expected: '%v'. Got: '%v'", expectedByteRate, header.ByteRate)
 	}
 
 	expectedBlockAlign := uint16(expectedValues["BlockAlign"])
 	if header.BlockAlign != expectedBlockAlign {
-		t.Logf("Block align does not match. Expected: '%s'. Got: '%s'", expectedBlockAlign, header.BlockAlign)
+		t.Logf("Block align does not match. Expected: '%v'. Got: '%v'", expectedBlockAlign, header.BlockAlign)
 	}
 
 	expectedBitsPerSample := uint16(expectedValues["BitsPerSample"])
 	if header.BitsPerSample != expectedBitsPerSample {
-		t.Logf("Bits per sample does not match. Expected: '%s'. Got: '%s'", expectedBitsPerSample, header.BitsPerSample)
+		t.Logf("Bits per sample does not match. Expected: '%v'. Got: '%v'", expectedBitsPerSample, header.BitsPerSample)
 	}
 
 	expectedChunkSize := uint32(expectedValues["ChunkSize"])
 	if header.ChunkSize != expectedChunkSize {
-		t.Logf("Chunk size does not match. Expected: '%s'. Got: '%s'", expectedChunkSize, header.ChunkSize)
+		t.Logf("Chunk size does not match. Expected: '%v'. Got: '%v'", expectedChunkSize, header.ChunkSize)
 	}
 
 	expectedNumSamples := expectedValues["NumSamples"]
 	if header.NumSamples != expectedNumSamples {
-		t.Logf("Number of samples does not match. Expected: '%s'. Got: '%s'", expectedNumSamples, header.NumSamples)
+		t.Logf("Number of samples does not match. Expected: '%v'. Got: '%v'", expectedNumSamples, header.NumSamples)
 	}
 }
 
 func TestHeaderInitialization(t *testing.T) {
-	testFilePath := SmallWavFileName
+	testFilePath := smallWav
 	header, amountRead, err := readHeaderData(testFilePath)
 	if err != nil {
 		t.Fatalf("Expected header validation to pass, but recevied erro with message '%s'", err.Error())
@@ -159,7 +154,7 @@ func TestHeaderInitialization(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Got error when initializing wav with valid header: '%s'", err.Error())
 	}
-	performTestOfHeaderInitialization(t, wav.WavHeader, expectedHeaderDataForTestFile(testFilePath))
+	testHeader(t, wav.WavHeader, headers[testFilePath])
 }
 
 func TestReadWavFromNil(t *testing.T) {
@@ -173,7 +168,7 @@ func TestReadWavFromNil(t *testing.T) {
 }
 
 func TestReadWavFromFile(t *testing.T) {
-	testFilePath := SmallWavFileName
+	testFilePath := smallWav
 	testFile, err := os.Open(testFilePath)
 	if err != nil {
 		t.Fatalf("Unable to run test, can't open test file '%s'", testFilePath)
@@ -188,7 +183,7 @@ func TestReadWavFromFile(t *testing.T) {
 		t.Fatalf("Error reading wav from file '%s': '%s'", testFilePath, err.Error())
 	}
 
-	performTestOfHeaderInitialization(t, wav.WavHeader, expectedHeaderDataForTestFile(testFilePath))
+	testHeader(t, wav.WavHeader, headers[testFilePath])
 
 	if len(wav.Data8) != 0 {
 		t.Fatalf("Expected wav.Data8 to be empty, but has length %d", len(wav.Data8))
@@ -220,7 +215,7 @@ func TestStreamWav(t *testing.T) {
 		t.Fatal("Streaming from a nil reader should return an error")
 	}
 
-	testFilePath := SmallWavFileName
+	testFilePath := smallWav
 	testFile, err := os.Open(testFilePath)
 	if err != nil {
 		t.Fatalf("Unable to run test, can't open test file '%s'", testFilePath)
@@ -235,7 +230,7 @@ func TestStreamWav(t *testing.T) {
 		t.Fatalf("Streaming from a valid reader returned an error", err.Error())
 	}
 
-	performTestOfHeaderInitialization(t, wav.WavHeader, expectedHeaderDataForTestFile(testFilePath))
+	testHeader(t, wav.WavHeader, headers[testFilePath])
 
 	numberOfSamplesToRead := 1008
 	samplesRemaining := wav.NumSamples
