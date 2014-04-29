@@ -19,6 +19,7 @@ package wav
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 )
@@ -37,6 +38,8 @@ const (
 	BitsPerSampleOffset = 34
 	ChunkSizeOffset     = 40
 	ExpectedHeaderSize  = 44
+
+	wavFormatPCM = 1
 )
 
 type WavHeader struct {
@@ -53,11 +56,11 @@ type WavHeader struct {
 type Wav struct {
 	WavHeader
 
-	// The Data corresponding to BitsPerSample is populated, indexed by sample.
+	// DataXX for the corresponding BitsPerSample is populated, indexed by sample then channel.
 	Data8  [][]uint8
 	Data16 [][]int16
 
-	// Data is always populated, indexed by sample. It is a copy of DataXX.
+	// Data is populated for 8- and 16-bit samples. It is a copy of DataXX.
 	Data [][]int
 }
 
@@ -82,15 +85,13 @@ func checkHeader(header []byte) error {
 	if string(header[36:40]) != "data" {
 		return errors.New("wav: Header does not contain 'data'")
 	}
-
 	return nil
 }
 
-func (wavHeader *WavHeader) setup(header []byte) (err error) {
-	if err = checkHeader(header); err != nil {
-		return
+func (wavHeader *WavHeader) setup(header []byte) error {
+	if err := checkHeader(header); err != nil {
+		return err
 	}
-
 	wavHeader.AudioFormat = bLEtoUint16(header, AudioFormatOffset)
 	wavHeader.NumChannels = bLEtoUint16(header, NumChannelsOffset)
 	wavHeader.SampleRate = bLEtoUint32(header, SampleRateOffset)
@@ -99,8 +100,12 @@ func (wavHeader *WavHeader) setup(header []byte) (err error) {
 	wavHeader.BitsPerSample = bLEtoUint16(header, BitsPerSampleOffset)
 	wavHeader.ChunkSize = bLEtoUint32(header, ChunkSizeOffset)
 	wavHeader.NumSamples = int(wavHeader.ChunkSize) / int(wavHeader.BlockAlign)
-
-	return
+	switch wavHeader.AudioFormat {
+	case wavFormatPCM:
+	default:
+		return fmt.Errorf("wav: unknown audio format; %02x", wavHeader.AudioFormat)
+	}
+	return nil
 }
 
 // Returns a single sample laid out by channel e.g. [ch0, ch1, ...]
@@ -123,28 +128,22 @@ func ReadWav(r io.Reader) (wav *Wav, err error) {
 	if r == nil {
 		return nil, errors.New("wav: Invalid Reader")
 	}
-
 	bytes, err := ioutil.ReadAll(r)
 	if err != nil {
 		return nil, err
 	}
-
 	wav = new(Wav)
 	err = wav.WavHeader.setup(bytes)
 	if err != nil {
 		return nil, err
 	}
-
 	data := bytes[ExpectedHeaderSize : int(wav.ChunkSize)+ExpectedHeaderSize]
-
 	wav.Data = make([][]int, wav.NumSamples)
-
 	if wav.BitsPerSample == 8 {
 		wav.Data8 = make([][]uint8, wav.NumSamples)
 		for sampleIndex := 0; sampleIndex < wav.NumSamples; sampleIndex++ {
 			wav.Data8[sampleIndex] = make([]uint8, wav.NumChannels)
 		}
-
 		for i := 0; i < wav.NumSamples; i++ {
 			sample := readSample(data, i, wav.WavHeader)
 			wav.Data[i] = sample
@@ -158,7 +157,6 @@ func ReadWav(r io.Reader) (wav *Wav, err error) {
 		for sampleIndex := 0; sampleIndex < wav.NumSamples; sampleIndex++ {
 			wav.Data16[sampleIndex] = make([]int16, wav.NumChannels)
 		}
-
 		for i := 0; i < wav.NumSamples; i++ {
 			sample := readSample(data, i, wav.WavHeader)
 			wav.Data[i] = sample
@@ -168,7 +166,6 @@ func ReadWav(r io.Reader) (wav *Wav, err error) {
 			}
 		}
 	}
-
 	return
 }
 
