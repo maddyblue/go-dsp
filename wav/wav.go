@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"math"
 )
 
 const (
@@ -39,7 +40,8 @@ const (
 	ChunkSizeOffset     = 40
 	ExpectedHeaderSize  = 44
 
-	wavFormatPCM = 1
+	wavFormatPCM       = 1
+	wavFormatIEEEFloat = 3
 )
 
 type WavHeader struct {
@@ -62,6 +64,9 @@ type Wav struct {
 
 	// Data is populated for 8- and 16-bit samples. It is a copy of DataXX.
 	Data [][]int
+
+	// Float32 is populated for 32-bit samples.
+	Float32 [][]float32
 }
 
 type StreamedWav struct {
@@ -102,6 +107,7 @@ func (wavHeader *WavHeader) setup(header []byte) error {
 	wavHeader.NumSamples = int(wavHeader.ChunkSize) / int(wavHeader.BlockAlign)
 	switch wavHeader.AudioFormat {
 	case wavFormatPCM:
+	case wavFormatIEEEFloat:
 	default:
 		return fmt.Errorf("wav: unknown audio format; %02x", wavHeader.AudioFormat)
 	}
@@ -109,17 +115,26 @@ func (wavHeader *WavHeader) setup(header []byte) error {
 }
 
 // Returns a single sample laid out by channel e.g. [ch0, ch1, ...]
-func readSample(data []byte, sampleIndex int, header WavHeader) (sample []int) {
-	sample = make([]int, header.NumChannels)
-
-	for channelIdx := 0; channelIdx < int(header.NumChannels); channelIdx++ {
-		if header.BitsPerSample == 8 {
-			sample[channelIdx] = int(data[sampleIndex*int(header.NumChannels)+channelIdx])
-		} else if header.BitsPerSample == 16 {
-			sample[channelIdx] = int(bLEtoInt16(data, 2*sampleIndex*int(header.NumChannels)+channelIdx))
+func readSample(data []byte, sampleIndex int, header WavHeader) (n []int, f []float32) {
+	n = make([]int, header.NumChannels)
+	f = make([]float32, header.NumChannels)
+	for ch := uint16(0); ch < header.NumChannels; ch++ {
+		si := uint16(sampleIndex)*header.NumChannels + ch
+		switch header.AudioFormat {
+		case wavFormatPCM:
+			switch header.BitsPerSample {
+			case 8:
+				n[ch] = int(data[si])
+			case 16:
+				n[ch] = int(bLEtoInt16(data, 2*si))
+			}
+		case wavFormatIEEEFloat:
+			switch header.BitsPerSample {
+			case 32:
+				f[ch] = bLEtoFloat32(data, 4*si)
+			}
 		}
 	}
-
 	return
 }
 
@@ -138,33 +153,35 @@ func ReadWav(r io.Reader) (wav *Wav, err error) {
 		return nil, err
 	}
 	data := bytes[ExpectedHeaderSize : int(wav.ChunkSize)+ExpectedHeaderSize]
-	wav.Data = make([][]int, wav.NumSamples)
 	if wav.BitsPerSample == 8 {
+		wav.Data = make([][]int, wav.NumSamples)
 		wav.Data8 = make([][]uint8, wav.NumSamples)
-		for sampleIndex := 0; sampleIndex < wav.NumSamples; sampleIndex++ {
-			wav.Data8[sampleIndex] = make([]uint8, wav.NumChannels)
-		}
 		for i := 0; i < wav.NumSamples; i++ {
-			sample := readSample(data, i, wav.WavHeader)
+			wav.Data8[i] = make([]uint8, wav.NumChannels)
+			sample, _ := readSample(data, i, wav.WavHeader)
 			wav.Data[i] = sample
-
-			for ch := 0; ch < int(wav.NumChannels); ch++ {
+			for ch := uint16(0); ch < wav.NumChannels; ch++ {
 				wav.Data8[i][ch] = uint8(sample[ch])
 			}
 		}
 	} else if wav.BitsPerSample == 16 {
+		wav.Data = make([][]int, wav.NumSamples)
 		wav.Data16 = make([][]int16, wav.NumSamples)
-		for sampleIndex := 0; sampleIndex < wav.NumSamples; sampleIndex++ {
-			wav.Data16[sampleIndex] = make([]int16, wav.NumChannels)
-		}
 		for i := 0; i < wav.NumSamples; i++ {
-			sample := readSample(data, i, wav.WavHeader)
+			wav.Data16[i] = make([]int16, wav.NumChannels)
+			sample, _ := readSample(data, i, wav.WavHeader)
 			wav.Data[i] = sample
-
-			for ch := 0; ch < int(wav.NumChannels); ch++ {
+			for ch := uint16(0); ch < wav.NumChannels; ch++ {
 				wav.Data16[i][ch] = int16(sample[ch])
 			}
 		}
+	} else if wav.BitsPerSample == 32 {
+		wav.Float32 = make([][]float32, wav.NumSamples)
+		for i := 0; i < wav.NumSamples; i++ {
+			_, wav.Float32[i] = readSample(data, i, wav.WavHeader)
+		}
+	} else {
+		return nil, fmt.Errorf("wav: unknown bits per sample: %v", wav.BitsPerSample)
 	}
 	return
 }
@@ -210,7 +227,7 @@ func (wav *StreamedWav) ReadSamples(numSamples int) (samples [][]int, err error)
 	samples = make([][]int, numberOfSamplesRead)
 
 	for sampleIndex := 0; sampleIndex < numberOfSamplesRead; sampleIndex++ {
-		samples[sampleIndex] = readSample(data, sampleIndex, wav.WavHeader)
+		samples[sampleIndex], _ = readSample(data, sampleIndex, wav.WavHeader)
 	}
 
 	return
@@ -225,10 +242,19 @@ func bLEtoUint32(b []byte, idx int) uint32 {
 }
 
 // little-endian [2]byte to uint16 conversion
-func bLEtoUint16(b []byte, idx int) uint16 {
+func bLEtoUint16(b []byte, idx uint16) uint16 {
 	return uint16(b[idx+1])<<8 + uint16(b[idx])
 }
 
-func bLEtoInt16(b []byte, idx int) int16 {
+func bLEtoInt16(b []byte, idx uint16) int16 {
 	return int16(b[idx+1])<<8 + int16(b[idx])
+}
+
+func bLEtoFloat32(b []byte, idx uint16) float32 {
+	var u uint32
+	u += uint32(b[idx+3]) << 24
+	u += uint32(b[idx+2]) << 16
+	u += uint32(b[idx+1]) << 8
+	u += uint32(b[idx])
+	return math.Float32frombits(u)
 }

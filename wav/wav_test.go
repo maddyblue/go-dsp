@@ -8,6 +8,7 @@ import (
 
 const (
 	smallWav = "small.wav"
+	floatWav = "float.wav"
 )
 
 func readHeaderData(filePath string) (header []byte, amountRead int, err error) {
@@ -85,6 +86,16 @@ var headers = map[string]map[string]int{
 		"BitsPerSample": 16,
 		"ChunkSize":     83790,
 		"NumSamples":    83790 / 2,
+	},
+	floatWav: {
+		"AudioFormat":   3,
+		"NumChannels":   1,
+		"SampleRate":    44100,
+		"ByteRate":      176400,
+		"BlockAlign":    4,
+		"BitsPerSample": 32,
+		"ChunkSize":     1889280,
+		"NumSamples":    1889280 / 4,
 	},
 }
 
@@ -264,5 +275,39 @@ func TestStreamWav(t *testing.T) {
 	}
 	if len(samples) != 0 {
 		t.Fatal("Expected zero samples returned when reading past end of reader")
+	}
+}
+
+func TestFloat32(t *testing.T) {
+	testFilePath := floatWav
+	testFile, err := os.Open(testFilePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer testFile.Close()
+
+	wav, err := ReadWav(testFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	testHeader(t, wav.WavHeader, headers[testFilePath])
+
+	if len(wav.Data8) != 0 {
+		t.Fatalf("Expected wav.Data8 to be empty, but has length %d", len(wav.Data8))
+	}
+	if len(wav.Data16) != 0 {
+		t.Fatalf("Expected wav.Data16 to be empty, but has length %d", len(wav.Data16))
+	}
+	if len(wav.Float32) != wav.NumSamples {
+		t.Fatalf("wav.Float32 has incorrect length. Expected %d. Got %d", wav.NumSamples, len(wav.Float32))
+	}
+	for sampleIndex := 0; sampleIndex < wav.NumSamples; sampleIndex++ {
+		if len(wav.Float32[sampleIndex]) != int(wav.NumChannels) {
+			t.Fatalf("wav.Float32[%d] has incorrect length. Expected %d. Got %d", sampleIndex, wav.NumChannels, len(wav.Float32[sampleIndex]))
+		}
+	}
+	if len(wav.Data) != 0 {
+		t.Fatalf("wav.Data has incorrect length. Expected 0. Got %d", len(wav.Data))
 	}
 }
