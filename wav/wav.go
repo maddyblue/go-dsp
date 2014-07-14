@@ -18,11 +18,12 @@
 package wav
 
 import (
+	"bytes"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
-	"math"
 )
 
 const (
@@ -93,29 +94,58 @@ func checkHeader(header []byte) error {
 	return nil
 }
 
-func (wavHeader *WavHeader) setup(header []byte) error {
-	if err := checkHeader(header); err != nil {
-		return err
+func (wavHeader *WavHeader) setup(header []byte) (err error) {
+	if err = checkHeader(header); err != nil {
+		return
 	}
-	wavHeader.AudioFormat = bLEtoUint16(header, AudioFormatOffset)
-	wavHeader.NumChannels = bLEtoUint16(header, NumChannelsOffset)
-	wavHeader.SampleRate = bLEtoUint32(header, SampleRateOffset)
-	wavHeader.ByteRate = bLEtoUint32(header, ByteRateOffset)
-	wavHeader.BlockAlign = bLEtoUint16(header, BlockAlignOffset)
-	wavHeader.BitsPerSample = bLEtoUint16(header, BitsPerSampleOffset)
-	wavHeader.ChunkSize = bLEtoUint32(header, ChunkSizeOffset)
+	wavHeader.AudioFormat, err = bLEtoUint16(header, AudioFormatOffset)
+	if err != nil {
+		return
+	}
+
+	wavHeader.NumChannels, err = bLEtoUint16(header, NumChannelsOffset)
+	if err != nil {
+		return
+	}
+
+	wavHeader.SampleRate, err = bLEtoUint32(header, SampleRateOffset)
+	if err != nil {
+		return
+	}
+
+	wavHeader.ByteRate, err = bLEtoUint32(header, ByteRateOffset)
+	if err != nil {
+		return
+	}
+
+	wavHeader.BlockAlign, err = bLEtoUint16(header, BlockAlignOffset)
+	if err != nil {
+		return
+	}
+
+	wavHeader.BitsPerSample, err = bLEtoUint16(header, BitsPerSampleOffset)
+	if err != nil {
+		return
+	}
+
+	wavHeader.ChunkSize, err = bLEtoUint32(header, ChunkSizeOffset)
+	if err != nil {
+		return
+	}
+
 	wavHeader.NumSamples = int(wavHeader.ChunkSize) / int(wavHeader.BlockAlign)
+
 	switch wavHeader.AudioFormat {
 	case wavFormatPCM:
 	case wavFormatIEEEFloat:
 	default:
-		return fmt.Errorf("wav: unknown audio format; %02x", wavHeader.AudioFormat)
+		err = fmt.Errorf("wav: unknown audio format; %02x", wavHeader.AudioFormat)
 	}
-	return nil
+	return
 }
 
 // Returns a single sample laid out by channel e.g. [ch0, ch1, ...]
-func readSample(data []byte, sampleIndex int, header WavHeader) (n []int, f []float32) {
+func readSample(data []byte, sampleIndex int, header WavHeader) (n []int, f []float32, err error) {
 	n = make([]int, header.NumChannels)
 	f = make([]float32, header.NumChannels)
 	for ch := uint16(0); ch < header.NumChannels; ch++ {
@@ -126,12 +156,20 @@ func readSample(data []byte, sampleIndex int, header WavHeader) (n []int, f []fl
 			case 8:
 				n[ch] = int(data[si])
 			case 16:
-				n[ch] = int(bLEtoInt16(data, 2*si))
+				var value int16
+				value, err = bLEtoInt16(data, 2*si)
+				if err != nil {
+					return
+				}
+				n[ch] = int(value)
 			}
 		case wavFormatIEEEFloat:
 			switch header.BitsPerSample {
 			case 32:
-				f[ch] = bLEtoFloat32(data, 4*si)
+				f[ch], err = bLEtoFloat32(data, 4*si)
+				if err != nil {
+					return
+				}
 			}
 		}
 	}
@@ -158,7 +196,12 @@ func ReadWav(r io.Reader) (wav *Wav, err error) {
 		wav.Data8 = make([][]uint8, wav.NumSamples)
 		for i := 0; i < wav.NumSamples; i++ {
 			wav.Data8[i] = make([]uint8, wav.NumChannels)
-			sample, _ := readSample(data, i, wav.WavHeader)
+
+			sample, _, err := readSample(data, i, wav.WavHeader)
+			if err != nil {
+				return nil, err
+			}
+
 			wav.Data[i] = sample
 			for ch := uint16(0); ch < wav.NumChannels; ch++ {
 				wav.Data8[i][ch] = uint8(sample[ch])
@@ -169,7 +212,12 @@ func ReadWav(r io.Reader) (wav *Wav, err error) {
 		wav.Data16 = make([][]int16, wav.NumSamples)
 		for i := 0; i < wav.NumSamples; i++ {
 			wav.Data16[i] = make([]int16, wav.NumChannels)
-			sample, _ := readSample(data, i, wav.WavHeader)
+
+			sample, _, err := readSample(data, i, wav.WavHeader)
+			if err != nil {
+				return nil, err
+			}
+
 			wav.Data[i] = sample
 			for ch := uint16(0); ch < wav.NumChannels; ch++ {
 				wav.Data16[i][ch] = int16(sample[ch])
@@ -178,7 +226,10 @@ func ReadWav(r io.Reader) (wav *Wav, err error) {
 	} else if wav.BitsPerSample == 32 {
 		wav.Float32 = make([][]float32, wav.NumSamples)
 		for i := 0; i < wav.NumSamples; i++ {
-			_, wav.Float32[i] = readSample(data, i, wav.WavHeader)
+			_, wav.Float32[i], err = readSample(data, i, wav.WavHeader)
+			if err != nil {
+				return nil, err
+			}
 		}
 	} else {
 		return nil, fmt.Errorf("wav: unknown bits per sample: %v", wav.BitsPerSample)
@@ -227,34 +278,41 @@ func (wav *StreamedWav) ReadSamples(numSamples int) (samples [][]int, err error)
 	samples = make([][]int, numberOfSamplesRead)
 
 	for sampleIndex := 0; sampleIndex < numberOfSamplesRead; sampleIndex++ {
-		samples[sampleIndex], _ = readSample(data, sampleIndex, wav.WavHeader)
+		samples[sampleIndex], _, err = readSample(data, sampleIndex, wav.WavHeader)
+		if err != nil {
+			return
+		}
 	}
 
 	return
 }
 
 // little-endian [4]byte to uint32 conversion
-func bLEtoUint32(b []byte, idx int) uint32 {
-	return uint32(b[idx+3])<<24 +
-		uint32(b[idx+2])<<16 +
-		uint32(b[idx+1])<<8 +
-		uint32(b[idx])
+func bLEtoUint32(b []byte, idx uint16) (value uint32, err error) {
+	buf := bytes.NewReader([]byte{b[idx], b[idx+1], b[idx+2], b[idx+3]})
+	err = binary.Read(buf, binary.LittleEndian, &value)
+
+	return
 }
 
 // little-endian [2]byte to uint16 conversion
-func bLEtoUint16(b []byte, idx uint16) uint16 {
-	return uint16(b[idx+1])<<8 + uint16(b[idx])
+func bLEtoUint16(b []byte, idx uint16) (value uint16, err error) {
+	buf := bytes.NewReader([]byte{b[idx], b[idx+1]})
+	err = binary.Read(buf, binary.LittleEndian, &value)
+
+	return
 }
 
-func bLEtoInt16(b []byte, idx uint16) int16 {
-	return int16(b[idx+1])<<8 + int16(b[idx])
+func bLEtoInt16(b []byte, idx uint16) (value int16, err error) {
+	buf := bytes.NewReader([]byte{b[idx], b[idx+1]})
+	err = binary.Read(buf, binary.LittleEndian, &value)
+
+	return
 }
 
-func bLEtoFloat32(b []byte, idx uint16) float32 {
-	var u uint32
-	u += uint32(b[idx+3]) << 24
-	u += uint32(b[idx+2]) << 16
-	u += uint32(b[idx+1]) << 8
-	u += uint32(b[idx])
-	return math.Float32frombits(u)
+func bLEtoFloat32(b []byte, idx uint16) (value float32, err error) {
+	buf := bytes.NewReader([]byte{b[idx], b[idx+1], b[idx+2], b[idx+3]})
+	err = binary.Read(buf, binary.LittleEndian, &value)
+
+	return
 }
