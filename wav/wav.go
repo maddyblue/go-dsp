@@ -118,8 +118,9 @@ func (wavHeader *WavHeader) setup(header []byte) error {
 func readSample(data []byte, sampleIndex int, header WavHeader) (n []int, f []float32) {
 	n = make([]int, header.NumChannels)
 	f = make([]float32, header.NumChannels)
-	for ch := uint16(0); ch < header.NumChannels; ch++ {
-		si := uint16(sampleIndex)*header.NumChannels + ch
+	nChannels := int(header.NumChannels)
+	for ch := 0; ch < nChannels; ch++ {
+		si := (sampleIndex * nChannels) + ch
 		switch header.AudioFormat {
 		case wavFormatPCM:
 			switch header.BitsPerSample {
@@ -242,15 +243,15 @@ func bLEtoUint32(b []byte, idx int) uint32 {
 }
 
 // little-endian [2]byte to uint16 conversion
-func bLEtoUint16(b []byte, idx uint16) uint16 {
+func bLEtoUint16(b []byte, idx int) uint16 {
 	return uint16(b[idx+1])<<8 + uint16(b[idx])
 }
 
-func bLEtoInt16(b []byte, idx uint16) int16 {
+func bLEtoInt16(b []byte, idx int) int16 {
 	return int16(b[idx+1])<<8 + int16(b[idx])
 }
 
-func bLEtoFloat32(b []byte, idx uint16) float32 {
+func bLEtoFloat32(b []byte, idx int) float32 {
 	var u uint32
 	u += uint32(b[idx+3]) << 24
 	u += uint32(b[idx+2]) << 16
