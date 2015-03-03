@@ -12,13 +12,16 @@ go-dsp is a digital signal processing package for the [Go programming language](
 
 ## Installation and Usage
 
-```$ go get "github.com/mjibson/go-dsp/fft"```
+```$ go get github.com/mjibson/go-dsp/fft```
 
 ```
 package main
 
-import "github.com/mjibson/go-dsp/fft"
-import "fmt"
+import (
+        "fmt"
+        
+        "github.com/mjibson/go-dsp/fft"
+)
 
 func main() {
         fmt.Println(fft.FFTReal([]float64 {1, 2, 3}))
