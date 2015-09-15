@@ -17,7 +17,9 @@
 package fft
 
 import (
+	"fmt"
 	"math"
+	"math/cmplx"
 	"runtime"
 	"testing"
 
@@ -275,4 +277,44 @@ func BenchmarkFFT(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		FFT(a)
 	}
+}
+
+// This example is adapted from Richard Lyon's "Understanding Digital Signal Processing," section 3.1.1.
+func ExampleFFTReal() {
+	numSamples := 8
+
+	// Equation 3-10.
+	x := func(n int) float64 {
+		wave0 := math.Sin(2.0 * math.Pi * float64(n) / 8.0)
+		wave1 := 0.5 * math.Sin(2*math.Pi*float64(n)/4.0+3.0*math.Pi/4.0)
+		return wave0 + wave1
+	}
+
+	// Discretize our function by sampling at 8 points.
+	a := make([]float64, numSamples)
+	for i := 0; i < numSamples; i++ {
+		a[i] = x(i)
+	}
+
+	X := FFTReal(a)
+
+	// Print the magnitude and phase at each frequency.
+	for i := 0; i < numSamples; i++ {
+		r, θ := cmplx.Polar(X[i])
+		θ *= 360.0 / (2 * math.Pi)
+		if dsputils.Float64Equal(r, 0) {
+			θ = 0 // (When the magnitude is close to 0, the angle is meaningless)
+		}
+		fmt.Printf("X(%d) = %.1f ∠ %.1f°\n", i, r, θ)
+	}
+
+	// Output:
+	// X(0) = 0.0 ∠ 0.0°
+	// X(1) = 4.0 ∠ -90.0°
+	// X(2) = 2.0 ∠ 45.0°
+	// X(3) = 0.0 ∠ 0.0°
+	// X(4) = 0.0 ∠ 0.0°
+	// X(5) = 0.0 ∠ 0.0°
+	// X(6) = 2.0 ∠ -45.0°
+	// X(7) = 4.0 ∠ 90.0°
 }
