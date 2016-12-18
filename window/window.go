@@ -96,3 +96,29 @@ func Bartlett(L int) []float64 {
 
 	return r
 }
+
+// FlatTop returns an L-point flat top window.
+// Reference: http://www.mathworks.com/help/signal/ref/flattopwin.html
+func FlatTop(L int) []float64 {
+	r := make([]float64, L)
+
+	if L == 1 {
+		r[0] = 1
+		return r
+	}
+
+	N := L - 1
+	coef := 2 * math.Pi / float64(N)
+
+	alpha0 := float64(0.21557895)
+	alpha1 := float64(0.41663158)
+	alpha2 := float64(0.277263158)
+	alpha3 := float64(0.083578947)
+	alpha4 := float64(0.006947368)
+
+	for n := 0; n <= N; n++ {
+		r[n] = alpha0 - alpha1*math.Cos(float64(n)*coef) + alpha2*math.Cos(2*coef*float64(n)) - alpha3*math.Cos(3*coef*float64(n)) + alpha4*math.Cos(4*coef*float64(n))
+	}
+
+	return r
+}
