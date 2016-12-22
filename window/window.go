@@ -42,6 +42,11 @@ func Rectangular(L int) []float64 {
 // Hamming returns an L-point symmetric Hamming window.
 // Reference: http://www.mathworks.com/help/signal/ref/hamming.html
 func Hamming(L int) []float64 {
+	const (
+		alpha0 = 0.54
+		alpha1 = 0.46
+	)
+
 	r := make([]float64, L)
 
 	if L == 1 {
@@ -50,7 +55,7 @@ func Hamming(L int) []float64 {
 		N := L - 1
 		coef := math.Pi * 2 / float64(N)
 		for n := 0; n <= N; n++ {
-			r[n] = 0.54 - 0.46*math.Cos(coef*float64(n))
+			r[n] = alpha0 - alpha1*math.Cos(coef*float64(n))
 		}
 	}
 
@@ -100,6 +105,14 @@ func Bartlett(L int) []float64 {
 // FlatTop returns an L-point flat top window.
 // Reference: http://www.mathworks.com/help/signal/ref/flattopwin.html
 func FlatTop(L int) []float64 {
+	const (
+		alpha0 = float64(0.21557895)
+		alpha1 = float64(0.41663158)
+		alpha2 = float64(0.277263158)
+		alpha3 = float64(0.083578947)
+		alpha4 = float64(0.006947368)
+	)
+
 	r := make([]float64, L)
 
 	if L == 1 {
@@ -110,14 +123,16 @@ func FlatTop(L int) []float64 {
 	N := L - 1
 	coef := 2 * math.Pi / float64(N)
 
-	alpha0 := float64(0.21557895)
-	alpha1 := float64(0.41663158)
-	alpha2 := float64(0.277263158)
-	alpha3 := float64(0.083578947)
-	alpha4 := float64(0.006947368)
-
 	for n := 0; n <= N; n++ {
-		r[n] = alpha0 - alpha1*math.Cos(float64(n)*coef) + alpha2*math.Cos(2*coef*float64(n)) - alpha3*math.Cos(3*coef*float64(n)) + alpha4*math.Cos(4*coef*float64(n))
+		factor := float64(n) * coef
+
+		term0 := alpha0
+		term1 := alpha1 * math.Cos(factor)
+		term2 := alpha2 * math.Cos(2 * factor)
+		term3 := alpha3 * math.Cos(3 * factor)
+		term4 := alpha4 * math.Cos(4 * factor)
+		
+		r[n] = term0 - term1 + term2 - term3 + term4
 	}
 
 	return r
