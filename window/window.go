@@ -42,11 +42,6 @@ func Rectangular(L int) []float64 {
 // Hamming returns an L-point symmetric Hamming window.
 // Reference: http://www.mathworks.com/help/signal/ref/hamming.html
 func Hamming(L int) []float64 {
-	const (
-		alpha0 = 0.54
-		alpha1 = 0.46
-	)
-
 	r := make([]float64, L)
 
 	if L == 1 {
@@ -55,7 +50,7 @@ func Hamming(L int) []float64 {
 		N := L - 1
 		coef := math.Pi * 2 / float64(N)
 		for n := 0; n <= N; n++ {
-			r[n] = alpha0 - alpha1*math.Cos(coef*float64(n))
+			r[n] = 0.54 - 0.46*math.Cos(coef*float64(n))
 		}
 	}
 
