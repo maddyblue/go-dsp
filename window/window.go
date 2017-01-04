@@ -123,10 +123,10 @@ func FlatTop(L int) []float64 {
 
 		term0 := alpha0
 		term1 := alpha1 * math.Cos(factor)
-		term2 := alpha2 * math.Cos(2 * factor)
-		term3 := alpha3 * math.Cos(3 * factor)
-		term4 := alpha4 * math.Cos(4 * factor)
-		
+		term2 := alpha2 * math.Cos(2*factor)
+		term3 := alpha3 * math.Cos(3*factor)
+		term4 := alpha4 * math.Cos(4*factor)
+
 		r[n] = term0 - term1 + term2 - term3 + term4
 	}
 
