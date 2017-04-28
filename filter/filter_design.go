@@ -2741,7 +2741,7 @@ package filter
 //     return n
 // 
 // 
-// func buttord(wp, ws, gpass, gstop, analog=False) {
+// func buttord(wp []float64, ws []float64, gpass float64, gstop float64, analog bool) (int, []float64, error) {
 //     /*Butterworth filter order selection.
 // 
 //     Return the order of the lowest order digital or analog Butterworth filter
@@ -2812,41 +2812,45 @@ package filter
 //     >>> plt.show()
 // 
 //     */
-//     wp = atleast_1d(wp)
-//     ws = atleast_1d(ws)
-//     filter_type = 2 * (len(wp) - 1)
+// //    wp = atleast_1d(wp)
+// //    ws = atleast_1d(ws)
+//     filter_type := 2 * (len(wp) - 1)
 //     filter_type += 1
-//     if wp[0] >= ws[0]:
+//     if wp[0] >= ws[0] {
 //         filter_type += 1
+//     }
 // 
 //     // Pre-warp frequencies for digital filter design
-//     if not analog:
-//         passb = tan(pi * wp / 2.0)
-//         stopb = tan(pi * ws / 2.0)
-//     else:
-//         passb = wp * 1.0
-//         stopb = ws * 1.0
+//     if !analog {
+//         passb := tan(pi * wp / 2.0)
+//         stopb := tan(pi * ws / 2.0)
+//     } else {
+//         passb := wp * 1.0
+//         stopb := ws * 1.0
+//     }
 // 
-//     if filter_type == 1:            // low
-//         nat = stopb / passb
-//     elif filter_type == 2:          // high
-//         nat = passb / stopb
-//     elif filter_type == 3:          // stop
-//         wp0 = optimize.fminbound(band_stop_obj, passb[0], stopb[0] - 1e-12,
+//     switch filter_type {
+//         case 1: // low
+//             nat := stopb / passb
+//         case 2: // high
+//             nat := passb / stopb
+//         case 3: // stop
+//             wp0 = optimize.fminbound(band_stop_obj, passb[0], stopb[0] - 1e-12,
 //                                  args=(0, passb, stopb, gpass, gstop,
 //                                        'butter'),
 //                                  disp=0)
-//         passb[0] = wp0
-//         wp1 = optimize.fminbound(band_stop_obj, stopb[1] + 1e-12, passb[1],
-//                                  args=(1, passb, stopb, gpass, gstop,
-//                                        'butter'),
-//                                  disp=0)
-//         passb[1] = wp1
-//         nat = ((stopb * (passb[0] - passb[1])) /
-//                (stopb ** 2 - passb[0] * passb[1]))
-//     elif filter_type == 4:          // pass
-//         nat = ((stopb ** 2 - passb[0] * passb[1]) /
+//             passb[0] = wp0
+//             wp1 = optimize.fminbound(band_stop_obj, stopb[1] + 1e-12, passb[1],
+//                                     args=(1, passb, stopb, gpass, gstop,
+//                                         'butter'),
+//                                     disp=0)
+//             passb[1] = wp1
+//             nat = ((stopb * (passb[0] - passb[1])) /
+//                 (stopb ** 2 - passb[0] * passb[1]))
+//         case 4: // pass
+//             nat = ((stopb ** 2 - passb[0] * passb[1]) /
 //                (stopb * (passb[0] - passb[1])))
+//     }
 // 
 //     nat = min(abs(nat))
 // 
@@ -2865,34 +2869,40 @@ package filter
 //     // now convert this frequency back from lowpass prototype
 //     // to the original analog filter
 // 
-//     if filter_type == 1:  // low
-//         WN = W0 * passb
-//     elif filter_type == 2:  // high
-//         WN = passb / W0
-//     elif filter_type == 3:  // stop
-//         WN = numpy.zeros(2, float)
-//         discr = sqrt((passb[1] - passb[0]) ** 2 +
-//                      4 * W0 ** 2 * passb[0] * passb[1])
-//         WN[0] = ((passb[1] - passb[0]) + discr) / (2 * W0)
-//         WN[1] = ((passb[1] - passb[0]) - discr) / (2 * W0)
-//         WN = numpy.sort(abs(WN))
-//     elif filter_type == 4:  // pass
-//         W0 = numpy.array([-W0, W0], float)
-//         WN = (-W0 * (passb[1] - passb[0]) / 2.0 +
-//               sqrt(W0 ** 2 / 4.0 * (passb[1] - passb[0]) ** 2 +
-//                    passb[0] * passb[1]))
-//         WN = numpy.sort(abs(WN))
-//     else:
-//         raise ValueError("Bad type: %s" % filter_type)
-// 
-//     if not analog:
+//     switch (filter_type) {
+//         case 1: // low
+//             WN = W0 * passb
+//         case 2:
+//             WN = passb / W0
+//         case 3:
+//             WN = numpy.zeros(2, float)
+//             discr = sqrt((passb[1] - passb[0]) ** 2 +
+//                         4 * W0 ** 2 * passb[0] * passb[1])
+//             WN[0] = ((passb[1] - passb[0]) + discr) / (2 * W0)
+//             WN[1] = ((passb[1] - passb[0]) - discr) / (2 * W0)
+//             WN = numpy.sort(abs(WN))
+//         case 4:
+//             W0 = numpy.array([-W0, W0], float)
+//             WN = (-W0 * (passb[1] - passb[0]) / 2.0 +
+//                 sqrt(W0 ** 2 / 4.0 * (passb[1] - passb[0]) ** 2 +
+//                     passb[0] * passb[1]))
+//             WN = numpy.sort(abs(WN))            
+//         default:
+//             raise ValueError("Bad type: %s" % filter_type)  
+//     }
+//     
+//     if !analog {
 //         wn = (2.0 / pi) * arctan(WN)
-//     else:
+//     } else {
 //         wn = WN
+//     }
 // 
-//     if len(wn) == 1:
+//     if len(wn) == 1 {
 //         wn = wn[0]
+//     }
+// 
 //     return ord, wn
+// }
 // 
 // 
 // func cheb1ord(wp, ws, gpass, gstop, analog=False) {
