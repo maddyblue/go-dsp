@@ -132,3 +132,22 @@ func FlatTop(L int) []float64 {
 
 	return r
 }
+
+// Blackman returns an L-point kaiser window
+// Reference: http://www.mathworks.com/help/signal/ref/blackman.html
+func Blackman(L int) []float64 {
+	r := make([]float64, L)
+	if L == 1 {
+		r[0] = 1
+	} else {
+		N := L - 1
+		n := 0
+		for ; n <= N; n++ {
+			term0 := 0.42
+			term1 := -0.5 * math.Cos(2*math.Pi*float64(n)/float64(N))
+			term2 := 0.08 * math.Cos(4*math.Pi*float64(n)/float64(N))
+			r[n] = term0 + term1 + term2
+		}
+	}
+	return r
+}
