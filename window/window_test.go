@@ -28,11 +28,13 @@ type windowTest struct {
 	hann     []float64
 	bartlett []float64
 	flatTop  []float64
+	blackman []float64
 }
 
 var windowTests = []windowTest{
 	{
 		1,
+		[]float64{1},
 		[]float64{1},
 		[]float64{1},
 		[]float64{1},
@@ -44,6 +46,7 @@ var windowTests = []windowTest{
 		[]float64{0, 0.5, 1, 0.5, 0},
 		[]float64{0, 0.5, 1, 0.5, 0},
 		[]float64{-0.0004210510000000013, -0.05473684000000003, 1, -0.05473684000000003, -0.0004210510000000013},
+		[]float64{0, 0.34, 1, 0.34, 0},
 	},
 	{
 		10,
@@ -51,6 +54,7 @@ var windowTests = []windowTest{
 		[]float64{0, 0.116977778440511, 0.413175911166535, 0.75, 0.969846310392954, 0.969846310392954, 0.75, 0.413175911166535, 0.116977778440511, 0},
 		[]float64{0, 0.222222222222222, 0.444444444444444, 0.666666666666667, 0.888888888888889, 0.888888888888889, 0.666666666666667, 0.444444444444444, 0.222222222222222, 0},
 		[]float64{-0.000421051000000, -0.020172031509486, -0.070199042063189, 0.198210530000000, 0.862476344072674, 0.862476344072674, 0.198210530000000, -0.070199042063189, -0.020172031509486, -0.000421051000000},
+		[]float64{0, 0.0508696327, 0.258000502, 0.63, 0.951129866, 0.951129866, 0.63, 0.258000502, 0.0508696327, 0},
 	},
 }
 
@@ -80,6 +84,11 @@ func TestWindowFunctions(t *testing.T) {
 		o = FlatTop(v.in)
 		if !dsputils.PrettyClose(o, v.flatTop) {
 			t.Error("flatTop error\ninput:", v.in, "\noutput:", o, "\nexpected:", v.flatTop)
+		}
+
+		o = Blackman(v.in)
+		if !dsputils.PrettyClose(o, v.blackman) {
+			t.Error("blackman error\ninput:", v.in, "\noutput:", o, "\nexpected:", v.blackman)
 		}
 	}
 }
