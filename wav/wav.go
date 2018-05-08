@@ -159,3 +159,28 @@ func (w *Wav) ReadFloats(n int) ([]float32, error) {
 	}
 	return f, nil
 }
+
+func (w *Wav) ReadFloats64(n int) ([]float64, error) {
+	d, err := w.ReadSamples(n)
+	if err != nil {
+		return nil, err
+	}
+	var f []float64
+	switch d := d.(type) {
+	case []uint8:
+		f = make([]float64, len(d))
+		for i, v := range d {
+			f[i] = float64(v) / math.MaxUint8
+		}
+	case []int16:
+		f = make([]float64, len(d))
+		for i, v := range d {
+			f[i] = (float64(v) - math.MinInt16) / (math.MaxInt16 - math.MinInt16)
+		}
+	case []float64:
+		f = d
+	default:
+		return nil, fmt.Errorf("wav: unknown type: %T", d)
+	}
+	return f, nil
+}
