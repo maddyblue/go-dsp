@@ -22,10 +22,11 @@ import (
 )
 
 // Apply applies the window windowFunction to x.
-func Apply(x []float64, windowFunction func(int) []float64) {
+func Apply(x []float64, windowFunction func(int) []float64) []float64 {
 	for i, w := range windowFunction(len(x)) {
 		x[i] *= w
 	}
+	return x
 }
 
 // Rectangular returns an L-point rectangular window (all values are 1).
