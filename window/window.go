@@ -150,3 +150,22 @@ func Blackman(L int) []float64 {
 	}
 	return r
 }
+
+// BlackmanHarris returns an L-point Blackman-Harris window
+// Reference: https://www.mathworks.com/help/signal/ref/blackmanharris.html
+func BlackmanHarris(L int) []float64 {
+	r := make([]float64, L)
+	if L == 1 {
+		r[0] = 1
+	} else {
+		N := L - 1
+		for n := 0; n <= N; n++ {
+			const term0 = 0.35875
+			term1 := -0.48829 * math.Cos(2*math.Pi*float64(n)/float64(N))
+			term2 := 0.14128 * math.Cos(4*math.Pi*float64(n)/float64(N))
+			term3 := -0.01168 * math.Cos(6*math.Pi*float64(n)/float64(N))
+			r[n] = term0 + term1 + term2 + term3
+		}
+	}
+	return r
+}
